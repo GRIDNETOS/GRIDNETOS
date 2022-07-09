@@ -1,0 +1,106 @@
+
+<link rel="stylesheet" href="/css/windowDefault.css" />
+<link rel="stylesheet" href="/dApps/Browser/src/css/main.css">
+<link rel="stylesheet" href="/dApps/Browser/src/css/vanilla-picker.css">
+<div id="selector">
+  <div class="selector-top"></div>
+  <div class="selector-left"></div>
+  <div class="selector-right"></div>
+  <div class="selector-bottom"></div>
+</div>
+<form onkeydown="if(event.key == 'Enter') {let window = gWindowManager.getWindowByID($($(this).closest('.idContainer')).find('#windowIDField').first().val()); if(!window.isSFOk){ window.animateCSS(this.id,'shakeX'); return}; window.frameLoadNewSite();  return false;} return true;">
+  <div id="fileManagerToolbar">
+
+
+    <div id="fileTopMenu" class="fileTopMenu" style="
+  /* text-align: left; */
+">
+
+
+      <div class="category">
+
+
+        <img class="goBackBtn topBarIcon" style="opacity: 0.3" alt="Go Back" title="Go Back" src="/images/back.png"
+          onclick="let window = gWindowManager.getWindowByID($($(this).closest('.idContainer')).find('#windowIDField').first().val()); if(!window.isSFOk){ window.animateCSS(this.id,'shakeX'); return}; if(window.getGoBackEnabled) window.goBack();  return false;">
+      </div>
+      <div class="category">
+        <img  class="goForthBtn topBarIcon" style="opacity: 0.3" alt="Go Forth" title="Go Forth" src="/images/forth.png"
+          onclick="let window = gWindowManager.getWindowByID($($(this).closest('.idContainer')).find('#windowIDField').first().val()); if(!window.isSFOk){ window.animateCSS(this.id,'shakeX'); return}; if(window.getGoForthEnabled) window.goForth();  return false;">
+      </div>
+
+      <div class="category">
+        <img  class="refreshBtn topBarIcon"  alt="Reload Page" title="Reload Page" src="/images/refresh.png"
+          onclick="let window = gWindowManager.getWindowByID($($(this).closest('.idContainer')).find('#windowIDField').first().val()); if(!window.isSFOk){ window.animateCSS(this.id,'shakeX'); return}; window.refresh();  return false;">
+      </div>
+
+      <input type="text" onClick="this.value = this.value.replace('https://',''); this.select();" autocomplete="off" id="locationField" ng-model="" class="addBar es-input">
+      <div class="category">
+        <img class="anonymousBtn topBarIcon" style="opacity: 0.6" alt="Anonymous View" title="Anonymous View" src="/dApps/Browser/images/maskoff.png"
+          onclick="let window = gWindowManager.getWindowByID($($(this).closest('.idContainer')).find('#windowIDField').first().val()); if(!window.isSFOk){ window.animateCSS(this.id,'shakeX'); return}; window.toggleAnonymity();  return false;">
+      </div>
+
+      <div class="category">
+        <img  class="wandBtn topBarIcon" style="opacity: 0.6" alt="Customize Page" title="Customize Page" src="/dApps/Browser/images/wand.cur"
+          onclick="let window = gWindowManager.getWindowByID($($(this).closest('.idContainer')).find('#windowIDField').first().val()); if(!window.isSFOk){ window.animateCSS(this.id,'shakeX'); return}; window.toggleWand();  return false;">
+      </div>
+
+      <div class="category">
+        <img class="topBarIcon" alt="Home" title="Home" src="/images/home.png"
+          onclick="let window = gWindowManager.getWindowByID($($(this).closest('.idContainer')).find('#windowIDField').first().val()); if(!window.isSFOk){ window.animateCSS(this.id,'shakeX'); return}; window.goHome();  return false;">
+      </div>
+      <div class="category">
+        <img class="topBarIcon" alt="World" title="List State Domains" src="/images/world.png" onclick="
+     let window = gWindowManager.getWindowByID($($(this).closest('.idContainer')).find('#windowIDField').first().val());if(CVMContext.getInstance().getConnectionState!=eConnectionState.connected)
+     {
+     window.showNotConnectedError();
+       return;
+     }
+    window.addNetworkRequestID(CVMContext.getInstance().getFileSystem.doCD('//', true, false, false, window.getThreadID).getReqID); window.addNetworkRequestID(CVMContext.getInstance().getFileSystem.doLS(window.getThreadID).getReqID);
+    window.addNetworkRequestID(CVMContext.getInstance().getFileSystem.doLS(window.getThreadID).getReqID);
+    ">
+      </div>
+
+      <div id="navigationBar" class="navigationBar">
+        Navigation
+      </div>
+      <ul class="es-list" style="top: 37.1875px; left: 89.8594px; width: calc(30% + 1.3em); display: none;">
+        <li class="es-visible">Home</li>
+        <li class="es-visible">Video Streams</li>
+        <li class="es-visible">Music</li>
+        <li class="es-visible">Global Domains</li>
+        <li class="es-visible">Torrent-Storage</li>
+      </ul>
+    </div>
+  </div>
+
+
+  <div>
+    <div class="linkBoxTouchDetector">
+
+    <div class="linkBox" >
+
+
+      <img src="/dApps/Browser/images/wikipedia.png" class="linkIcon" alt="Wikipedia"
+        onclick="let window = gWindowManager.getWindowByID($(this).closest(&#39;.idContainer&#39;).find(&#39;#windowIDField&#39;).first().val()); window.decideBehaviourOfAddBar('https://www.wikipedia.org')"></img>
+        <img src="/dApps/Browser/images/wikileaks.png" class="linkIcon" alt="Wikileaks"
+          onclick="let window = gWindowManager.getWindowByID($(this).closest(&#39;.idContainer&#39;).find(&#39;#windowIDField&#39;).first().val()); window.decideBehaviourOfAddBar('https://www.wikileaks.org')"></img>
+
+      <img src="/dApps/Browser/images/google.png" class="linkIcon" alt="Google" id="google"
+        onclick="let window = gWindowManager.getWindowByID($(this).closest(&#39;.idContainer&#39;).find(&#39;#windowIDField&#39;).first().val()); window.decideBehaviourOfAddBar('https://www.google.ca')"></img>
+
+    </div>
+</div>
+
+    <iframe is="x-wizardous-frame" class="viewerFrame iframeLoading" src="https://wikileaks.org/" proxyURI="[PROXY_URI]" winID="[GN_WIN_ID]"></iframe>
+    </div>
+    <div class='frameOverlay'>
+        </div>
+
+  <div style="color: black;
+    position: absolute;
+    bottom: 0px;
+    right: 0px;
+    z-index: 1000;">
+    <button class="themeToggle" onclick="let window = gWindowManager.getWindowByID($(this).closest(&#39;.idContainer&#39;).find(&#39;#windowIDField&#39;).first().val()); window.darkMode()">Dark mode</button>
+  </div>
+</form>
