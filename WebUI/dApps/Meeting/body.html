@@ -1,0 +1,473 @@
+<link rel="stylesheet" href="/dApps/Meeting/meeting.css">
+<link rel="stylesheet" href="/css/fontAwesomeAll.css" />
+<link rel="stylesheet" href="/css/font-awesomeMain.min.css"  />
+<link href="/dApps/Meeting/css/emoji.css" rel="stylesheet">
+
+    <div id='videosHeader' class='noselect'>
+      <div id="videosHeaderCoverD" class="videosHeaderCover"> <i class="fa fa-th"></i> LIVE Meeting </div>
+      <div class="shadow"></div>
+      <div id='actionsContainer' class="actionsContainer">
+        <div class="menu_simple">
+          <ul>
+            <li style="margin-top:-1em ; "><a href="#">Peers: 25</a> </li>
+
+            <li onclick="alert('Option 1 Clicked')"><a href="#">
+                <i class="fal fa-pause"></i> Pause</a></li>
+            <li onclick="gWindow.quitMeeting();"><a href="#">
+                <i class="far fa-sign-out-alt"></i> Quit</a></li>
+
+          </ul>
+        </div>
+
+      </div>
+    </div>
+
+    <div id='joinMeetingView' class='show'>
+
+      <div id='joinMeetingPoster'>
+
+      </div>
+      <div id='loginBox'>
+        <div id='loginBoxMeetingID'>
+          <label for="meetingIDTxt" style='color: cyan'>Meeting I D:</label>
+          <input type="text" class="neonicLiteTxtInput" id="meetingIDTxt" autocomplete="off" value="unknown" onclick="">
+          <button onclick="gWindow.setMeetingView();" id="joinMeetingBtn" class="buttonStd"><i class="fas fa-sign-in-alt fa-lg"></i>
+          </button>
+          <br>
+        </div>
+
+      </div>
+    </div>
+    <div id='activeMeetingView'>
+
+
+
+      <div id="videoFeedsContainer">
+
+
+
+        <div class='videoFeedContainer videoFeedResizable' onclick=" if((Date.now() -gLastVidResize)<200) return; gLastVidResize =Date.now(); this.classList.remove('videoFeedContainer'); this.classList.add('videoFeedResizableHovered');"
+          onmouseout="if((Date.now() -gLastVidResize)<200) return; gLastVidResize =Date.now();this.classList.remove('videoFeedResizableHovered'); classList.add('videoFeedContainer');">
+
+          <video height="auto" width="100%" loop="loop" poster="img/icon.png" autoplay="autoplay">
+            <source src="img/test.ogg" type="video/ogg">
+
+          </video>
+          <div class='videoFeedTitle'>
+            Johny
+          </div>
+
+
+        </div>
+        <div class='videoFeedContainer videoFeedResizable' onclick=" if((Date.now() -gLastVidResize)<200) return; gLastVidResize =Date.now(); this.classList.remove('videoFeedContainer'); this.classList.add('videoFeedResizableHovered');"
+          onmouseout="if((Date.now() -gLastVidResize)<200) return; gLastVidResize =Date.now();this.classList.remove('videoFeedResizableHovered'); classList.add('videoFeedContainer');">
+
+          <video height="auto" width="100%" loop="loop" poster="img/icon.png" autoplay="autoplay">
+            <source src="img/test.ogg" type="video/ogg">
+
+          </video>
+          <div class='videoFeedTitle'>
+            Mike
+          </div>
+
+
+        </div>
+        <div class='videoFeedContainer videoFeedResizable' onclick=" if((Date.now() -gLastVidResize)<200) return; gLastVidResize =Date.now(); this.classList.remove('videoFeedContainer'); this.classList.add('videoFeedResizableHovered');"
+          onmouseout="if((Date.now() -gLastVidResize)<200) return; gLastVidResize =Date.now();this.classList.remove('videoFeedResizableHovered'); classList.add('videoFeedContainer');">
+
+          <video height="auto" width="100%" loop="loop" poster="img/icon.png" autoplay="autoplay">
+            <source src="img/test.ogg" type="video/ogg">
+
+          </video>
+          <div class='videoFeedTitle'>
+            Jennifer
+          </div>
+
+
+        </div>
+        <div class='videoFeedContainer videoFeedResizable' onclick=" if((Date.now() -gLastVidResize)<200) return; gLastVidResize =Date.now(); this.classList.remove('videoFeedContainer'); this.classList.add('videoFeedResizableHovered');"
+          onmouseout="if((Date.now() -gLastVidResize)<200) return; gLastVidResize =Date.now();this.classList.remove('videoFeedResizableHovered'); classList.add('videoFeedContainer');">
+
+          <video height="auto" width="100%" loop="loop" poster="img/icon.png" autoplay="autoplay">
+            <source src="img/test.ogg" type="video/ogg">
+
+          </video>
+          <div class='videoFeedTitle'>
+            A87vHG12KLv65AvF67H
+          </div>
+
+
+        </div>
+        <div class='videoFeedContainer videoFeedResizable' onclick=" if((Date.now() -gLastVidResize)<200) return; gLastVidResize =Date.now(); this.classList.remove('videoFeedContainer'); this.classList.add('videoFeedResizableHovered');"
+          onmouseout="if((Date.now() -gLastVidResize)<200) return; gLastVidResize =Date.now();this.classList.remove('videoFeedResizableHovered'); classList.add('videoFeedContainer');">
+
+          <video height="auto" width="100%" loop="loop" poster="img/icon.png" autoplay="autoplay">
+            <source src="img/test.ogg" type="video/ogg">
+
+          </video>
+          <div class='videoFeedTitle'>
+            Anonymous
+          </div>
+
+
+        </div>
+        <div class='videoFeedContainer videoFeedResizable' onclick=" if((Date.now() -gLastVidResize)<200) return; gLastVidResize =Date.now(); this.classList.remove('videoFeedContainer'); this.classList.add('videoFeedResizableHovered');"
+          onmouseout="if((Date.now() -gLastVidResize)<200) return; gLastVidResize =Date.now();this.classList.remove('videoFeedResizableHovered'); classList.add('videoFeedContainer');">
+
+          <video height="auto" width="100%" loop="loop" poster="img/icon.png" autoplay="autoplay">
+            <source src="img/test.ogg" type="video/ogg">
+
+          </video>
+          <div class='videoFeedTitle'>
+            FunnyCat
+          </div>
+
+
+        </div>
+        <div class='videoFeedContainer videoFeedResizable' onclick=" if((Date.now() -gLastVidResize)<200) return; gLastVidResize =Date.now(); this.classList.remove('videoFeedContainer'); this.classList.add('videoFeedResizableHovered');"
+          onmouseout="if((Date.now() -gLastVidResize)<200) return; gLastVidResize =Date.now();this.classList.remove('videoFeedResizableHovered'); classList.add('videoFeedContainer');">
+
+          <video height="auto" width="100%" loop="loop" poster="img/icon.png" autoplay="autoplay">
+            <source src="img/test.ogg" type="video/ogg">
+
+          </video>
+          <div class='videoFeedTitle'>
+            Johny
+          </div>
+
+
+        </div>
+        <div class='videoFeedContainer videoFeedResizable' onclick=" if((Date.now() -gLastVidResize)<200) return; gLastVidResize =Date.now(); this.classList.remove('videoFeedContainer'); this.classList.add('videoFeedResizableHovered');"
+          onmouseout="if((Date.now() -gLastVidResize)<200) return; gLastVidResize =Date.now();this.classList.remove('videoFeedResizableHovered'); classList.add('videoFeedContainer');">
+
+          <video height="auto" width="100%" loop="loop" poster="img/icon.png" autoplay="autoplay">
+            <source src="img/test.ogg" type="video/ogg">
+
+          </video>
+          <div class='videoFeedTitle'>
+            Mike
+          </div>
+
+
+        </div>
+        <div class='videoFeedContainer videoFeedResizable' onclick=" if((Date.now() -gLastVidResize)<200) return; gLastVidResize =Date.now(); this.classList.remove('videoFeedContainer'); this.classList.add('videoFeedResizableHovered');"
+          onmouseout="if((Date.now() -gLastVidResize)<200) return; gLastVidResize =Date.now();this.classList.remove('videoFeedResizableHovered'); classList.add('videoFeedContainer');">
+
+          <video height="auto" width="100%" loop="loop" poster="img/icon.png" autoplay="autoplay">
+            <source src="img/test.ogg" type="video/ogg">
+
+          </video>
+          <div class='videoFeedTitle'>
+            Jennifer
+          </div>
+
+
+        </div>
+        <div class='videoFeedContainer videoFeedResizable' onclick=" if((Date.now() -gLastVidResize)<200) return; gLastVidResize =Date.now(); this.classList.remove('videoFeedContainer'); this.classList.add('videoFeedResizableHovered');"
+          onmouseout="if((Date.now() -gLastVidResize)<200) return; gLastVidResize =Date.now();this.classList.remove('videoFeedResizableHovered'); classList.add('videoFeedContainer');">
+
+          <video height="auto" width="100%" loop="loop" poster="img/icon.png" autoplay="autoplay">
+            <source src="img/test.ogg" type="video/ogg">
+
+          </video>
+          <div class='videoFeedTitle'>
+            A87vHG12KLv65AvF67H
+          </div>
+
+
+        </div>
+        <div class='videoFeedContainer videoFeedResizable' onclick=" if((Date.now() -gLastVidResize)<200) return; gLastVidResize =Date.now(); this.classList.remove('videoFeedContainer'); this.classList.add('videoFeedResizableHovered');"
+          onmouseout="if((Date.now() -gLastVidResize)<200) return; gLastVidResize =Date.now();this.classList.remove('videoFeedResizableHovered'); classList.add('videoFeedContainer');">
+
+          <video height="auto" width="100%" loop="loop" poster="img/icon.png" autoplay="autoplay">
+            <source src="img/test.ogg" type="video/ogg">
+
+          </video>
+          <div class='videoFeedTitle'>
+            Anonymous
+          </div>
+
+
+        </div>
+        <div class='videoFeedContainer videoFeedResizable' onclick=" if((Date.now() -gLastVidResize)<200) return; gLastVidResize =Date.now(); this.classList.remove('videoFeedContainer'); this.classList.add('videoFeedResizableHovered');"
+          onmouseout="if((Date.now() -gLastVidResize)<200) return; gLastVidResize =Date.now();this.classList.remove('videoFeedResizableHovered'); classList.add('videoFeedContainer');">
+
+          <video height="auto" width="100%" loop="loop" poster="img/icon.png" autoplay="autoplay">
+            <source src="img/test.ogg" type="video/ogg">
+
+          </video>
+          <div class='videoFeedTitle'>
+            FunnyCat
+          </div>
+
+
+        </div>
+        <div class='videoFeedContainer videoFeedResizable' onclick=" if((Date.now() -gLastVidResize)<200) return; gLastVidResize =Date.now(); this.classList.remove('videoFeedContainer'); this.classList.add('videoFeedResizableHovered');"
+          onmouseout="if((Date.now() -gLastVidResize)<200) return; gLastVidResize =Date.now();this.classList.remove('videoFeedResizableHovered'); classList.add('videoFeedContainer');">
+
+          <video height="auto" width="100%" loop="loop" poster="img/icon.png" autoplay="autoplay">
+            <source src="img/test.ogg" type="video/ogg">
+
+          </video>
+          <div class='videoFeedTitle'>
+            Johny
+          </div>
+
+
+        </div>
+        <div class='videoFeedContainer videoFeedResizable' onclick=" if((Date.now() -gLastVidResize)<200) return; gLastVidResize =Date.now(); this.classList.remove('videoFeedContainer'); this.classList.add('videoFeedResizableHovered');"
+          onmouseout="if((Date.now() -gLastVidResize)<200) return; gLastVidResize =Date.now();this.classList.remove('videoFeedResizableHovered'); classList.add('videoFeedContainer');">
+
+          <video height="auto" width="100%" loop="loop" poster="img/icon.png" autoplay="autoplay">
+            <source src="img/test.ogg" type="video/ogg">
+
+          </video>
+          <div class='videoFeedTitle'>
+            Mike
+          </div>
+
+
+        </div>
+        <div class='videoFeedContainer videoFeedResizable' onclick=" if((Date.now() -gLastVidResize)<200) return; gLastVidResize =Date.now(); this.classList.remove('videoFeedContainer'); this.classList.add('videoFeedResizableHovered');"
+          onmouseout="if((Date.now() -gLastVidResize)<200) return; gLastVidResize =Date.now();this.classList.remove('videoFeedResizableHovered'); classList.add('videoFeedContainer');">
+
+          <video height="auto" width="100%" loop="loop" poster="img/icon.png" autoplay="autoplay">
+            <source src="img/test.ogg" type="video/ogg">
+
+          </video>
+          <div class='videoFeedTitle'>
+            Jennifer
+          </div>
+
+
+        </div>
+        <div class='videoFeedContainer videoFeedResizable' onclick=" if((Date.now() -gLastVidResize)<200) return; gLastVidResize =Date.now(); this.classList.remove('videoFeedContainer'); this.classList.add('videoFeedResizableHovered');"
+          onmouseout="if((Date.now() -gLastVidResize)<200) return; gLastVidResize =Date.now();this.classList.remove('videoFeedResizableHovered'); classList.add('videoFeedContainer');">
+
+          <video height="auto" width="100%" loop="loop" poster="img/icon.png" autoplay="autoplay">
+            <source src="img/test.ogg" type="video/ogg">
+
+          </video>
+          <div class='videoFeedTitle'>
+            A87vHG12KLv65AvF67H
+          </div>
+
+
+        </div>
+        <div class='videoFeedContainer videoFeedResizable' onclick=" if((Date.now() -gLastVidResize)<200) return; gLastVidResize =Date.now(); this.classList.remove('videoFeedContainer'); this.classList.add('videoFeedResizableHovered');"
+          onmouseout="if((Date.now() -gLastVidResize)<200) return; gLastVidResize =Date.now();this.classList.remove('videoFeedResizableHovered'); classList.add('videoFeedContainer');">
+
+          <video height="auto" width="100%" loop="loop" poster="img/icon.png" autoplay="autoplay">
+            <source src="img/test.ogg" type="video/ogg">
+
+          </video>
+          <div class='videoFeedTitle'>
+            Anonymous
+          </div>
+
+
+        </div>
+        <div class='videoFeedContainer videoFeedResizable' onclick=" if((Date.now() -gLastVidResize)<200) return; gLastVidResize =Date.now(); this.classList.remove('videoFeedContainer'); this.classList.add('videoFeedResizableHovered');"
+          onmouseout="if((Date.now() -gLastVidResize)<200) return; gLastVidResize =Date.now();this.classList.remove('videoFeedResizableHovered'); classList.add('videoFeedContainer');">
+
+          <video height="auto" width="100%" loop="loop" poster="img/icon.png" autoplay="autoplay">
+            <source src="img/test.ogg" type="video/ogg">
+
+          </video>
+          <div class='videoFeedTitle'>
+            FunnyCat
+          </div>
+
+
+        </div>
+        <div class='videoFeedContainer videoFeedResizable' onclick=" if((Date.now() -gLastVidResize)<200) return; gLastVidResize =Date.now(); this.classList.remove('videoFeedContainer'); this.classList.add('videoFeedResizableHovered');"
+          onmouseout="if((Date.now() -gLastVidResize)<200) return; gLastVidResize =Date.now();this.classList.remove('videoFeedResizableHovered'); classList.add('videoFeedContainer');">
+
+          <video height="auto" width="100%" loop="loop" poster="img/icon.png" autoplay="autoplay">
+            <source src="img/test.ogg" type="video/ogg">
+
+          </video>
+          <div class='videoFeedTitle'>
+            Johny
+          </div>
+
+
+        </div>
+        <div class='videoFeedContainer videoFeedResizable' onclick=" if((Date.now() -gLastVidResize)<200) return; gLastVidResize =Date.now(); this.classList.remove('videoFeedContainer'); this.classList.add('videoFeedResizableHovered');"
+          onmouseout="if((Date.now() -gLastVidResize)<200) return; gLastVidResize =Date.now();this.classList.remove('videoFeedResizableHovered'); classList.add('videoFeedContainer');">
+
+          <video height="auto" width="100%" loop="loop" poster="img/icon.png" autoplay="autoplay">
+            <source src="img/test.ogg" type="video/ogg">
+
+          </video>
+          <div class='videoFeedTitle'>
+            Mike
+          </div>
+
+
+        </div>
+        <div class='videoFeedContainer videoFeedResizable' onclick=" if((Date.now() -gLastVidResize)<200) return; gLastVidResize =Date.now(); this.classList.remove('videoFeedContainer'); this.classList.add('videoFeedResizableHovered');"
+          onmouseout="if((Date.now() -gLastVidResize)<200) return; gLastVidResize =Date.now();this.classList.remove('videoFeedResizableHovered'); classList.add('videoFeedContainer');">
+
+          <video height="auto" width="100%" loop="loop" poster="img/icon.png" autoplay="autoplay">
+            <source src="img/test.ogg" type="video/ogg">
+
+          </video>
+          <div class='videoFeedTitle'>
+            Jennifer
+          </div>
+
+
+        </div>
+        <div class='videoFeedContainer videoFeedResizable' onclick=" if((Date.now() -gLastVidResize)<200) return; gLastVidResize =Date.now(); this.classList.remove('videoFeedContainer'); this.classList.add('videoFeedResizableHovered');"
+          onmouseout="if((Date.now() -gLastVidResize)<200) return; gLastVidResize =Date.now();this.classList.remove('videoFeedResizableHovered'); classList.add('videoFeedContainer');">
+
+          <video height="auto" width="100%" loop="loop" poster="img/icon.png" autoplay="autoplay">
+            <source src="img/test.ogg" type="video/ogg">
+
+          </video>
+          <div class='videoFeedTitle'>
+            A87vHG12KLv65AvF67H
+          </div>
+
+
+        </div>
+        <div class='videoFeedContainer videoFeedResizable' onclick=" if((Date.now() -gLastVidResize)<200) return; gLastVidResize =Date.now(); this.classList.remove('videoFeedContainer'); this.classList.add('videoFeedResizableHovered');"
+          onmouseout="if((Date.now() -gLastVidResize)<200) return; gLastVidResize =Date.now();this.classList.remove('videoFeedResizableHovered'); classList.add('videoFeedContainer');">
+
+          <video height="auto" width="100%" loop="loop" poster="img/icon.png" autoplay="autoplay">
+            <source src="img/test.ogg" type="video/ogg">
+
+          </video>
+          <div class='videoFeedTitle'>
+            Anonymous
+          </div>
+
+
+        </div>
+        <div class='videoFeedContainer videoFeedResizable' onclick=" if((Date.now() -gLastVidResize)<200) return; gLastVidResize =Date.now(); this.classList.remove('videoFeedContainer'); this.classList.add('videoFeedResizableHovered');"
+          onmouseout="if((Date.now() -gLastVidResize)<200) return; gLastVidResize =Date.now();this.classList.remove('videoFeedResizableHovered'); classList.add('videoFeedContainer');">
+
+          <video height="auto" width="100%" loop="loop" poster="img/icon.png" autoplay="autoplay">
+            <source src="img/test.ogg" type="video/ogg">
+
+          </video>
+          <div class='videoFeedTitle'>
+            FunnyCat
+          </div>
+
+
+        </div>
+      </div>
+
+      <div id='mediaControls' style="text-align:center">
+        <span id='micBtnOuter' class="fa-stack redTxt">
+          <i class="fal fa-circle fa-stack-2x"></i>
+          <!-- microphone-alt -->
+          <i id='micBtn' class="fal fa-microphone-alt-slash fa-stack-1x" onclick="gWindow.toggleMic2();"></i>
+        </span>
+        <span id='camBtnOuter' class="fa-stack redTxt">
+          <i class="fal fa-circle fa-stack-2x"></i>
+          <!-- fa-webcam-slash-->
+          <i id='camBtn' class="fal fa-webcam-slash fa-stack-1x " onclick="gWindow.toggleCam();"></i>
+        </span>
+      </div>
+      <div id='chat' ondblclick="gWindow.toggleChatSize();" class=''>
+
+
+        <div id='chatHeader' class='noselect'>
+
+        </div>
+        <div id='chatMsgsContainer'>
+          <ul id="innerChat">
+            <li class="you">
+              <div class="entete">
+                <span class="status green"></span>
+                <h2>Vincent</h2>
+                <h3>10:12AM, Today</h3>
+              </div>
+
+              <div class="message">
+                <div class="triangle"></div>
+                Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Aenean commodo ligula eget dolor.
+              </div>
+            </li>
+            <li class="me">
+              <div class="entete">
+                <h3>10:12AM, Today</h3>
+                <h2>Vincent</h2>
+                <span class="status blue"></span>
+              </div>
+
+              <div class="message">
+                <div class="triangle"></div>
+                Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Aenean commodo ligula eget dolor.
+              </div>
+            </li>
+            <li class="me">
+              <div class="entete">
+                <h3>10:12AM, Today</h3>
+                <h2>Vincent</h2>
+                <span class="status blue"></span>
+              </div>
+
+              <div class="message">
+                <div class="triangle"></div>
+                OK
+              </div>
+            </li>
+            <li class="you">
+              <div class="entete">
+                <span class="status green"></span>
+                <h2>Vincent</h2>
+                <h3>10:12AM, Today</h3>
+              </div>
+
+              <div class="message">
+                <div class="triangle"></div>
+                Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Aenean commodo ligula eget dolor.
+              </div>
+            </li>
+            <li class="me">
+              <div class="entete">
+                <h3>10:12AM, Today</h3>
+                <h2>Vincent</h2>
+                <span class="status blue"></span>
+              </div>
+
+              <div class="message">
+                <div class="triangle"></div>
+                Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Aenean commodo ligula eget dolor.
+              </div>
+            </li>
+            <li class="me">
+              <div class="entete">
+                <h3>10:12AM, Today</h3>
+                <h2>Vincent</h2>
+                <span class="status blue"></span>
+              </div>
+
+              <div class="message">
+                <div class="triangle"></div>
+                OK
+              </div>
+            </li>
+          </ul>
+
+        </div>
+
+        <div style="position:fixed; bottom:0px;width:100%">
+          <div id='containerTxt'>
+
+            <input id='chatInputTxt' autocomplete="off" type="text" data-emojiable="true"></div>
+          <div id='containerBtn'>
+
+            <input id='chatSendBtn' onclick=' gWindow.newGlobalMsgFromMe(chatInputTxt.value);' type="button" value="Send"></div>
+        </div>
+      </div>
+    </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/util.js"></script>
+  <script src="js/jquery.emojiarea.js"></script>
+  <script src="js/emoji-picker.js"></script>

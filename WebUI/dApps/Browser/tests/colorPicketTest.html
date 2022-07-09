@@ -1,0 +1,113 @@
+<html>
+<head>
+<style>#selector-top, #selector-bottom {
+	background: blue;
+	height:3px;
+	position: fixed;
+	transition:all 300ms ease;
+}
+#selector-left, #selector-right {
+	background: blue;
+	width:3px;
+	position: fixed;
+	transition:all 300ms ease;
+}
+
+.n{
+ -webkit-transform: scale(3) translateX(100px)
+}
+</style>
+</head>
+<body>
+<script src="https://unpkg.com/vanilla-picker@2"></script>
+<div id="selector">
+  <div id="selector-top"></div>
+  <div id="selector-left"></div>
+  <div id="selector-right"></div>
+  <div id="selector-bottom"></div>
+</div>
+
+<h1>Welcome</h1><br>
+<button class="n">Click me</button><br>
+<br>
+<br>
+<p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Explicabo voluptates doloremque quisquam omnis rem fuga veritatis odit! Perferendis cupiditate corporis consequuntur amet ducimus quam at magni facilis debitis ut quisquam molestias maxime voluptatibus voluptatum minima in totam. Velit inventore deserunt facilis temporibus id provident illo optio ipsa aut consequuntur sed repellat dolorem obcaecati iusto ab. Placeat repellat <img src="http://placehold.it/200" style="float:left; margin:10px;" alt="">dolores debitis deleniti ipsum a accusamus in necessitatibus perferendis nostrum laudantium error modi quidem quae ab esse distinctio maiores ea sint doloremque dolorum quia et provident saepe natus nemo recusandae dolor atque quod aliquam! Est eum ipsam laudantium ad culpa consectetur aspernatur temporibus Lorem ipsum dolor sit amet, consectetur adipisicing elit. Magni doloribus praesentium a animi nesciunt modi vel provident ullam quia fugit dolor cupiditate aliquid! Veniam vitae reiciendis adipisci aliquam a deleniti omnis expedita quis natus. Velit placeat fugit officiis non nihil fuga dolorum veritatis maiores fugiat eligendi iste veniam tempore deserunt.</p>
+<button>More test buttons</button>
+
+<p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Numquam voluptatem a architecto nihil ullam. Non dolores optio ea dolorem accusantium a delectus molestias quam nulla fugit voluptas iste ipsum! Molestias id quaerat praesentium quo a illum optio sed at ut ad corporis asperiores eos dolorum commodi laboriosam adipisci <strong style="font-size:20px;">architecto</strong> provident voluptas repellendus expedita accusamus laudantium facilis in inventore officiis vero possimus veniam voluptatem unde ducimus. Labore ad expedita dolorum nesciunt totam aut debitis impedit saepe unde consequuntur sit obcaecati quibusdam dolorem mollitia aliquam assumenda nemo soluta voluptas molestias similique ex. Praesentium sequi natus molestiae adipisci perspiciatis voluptatibus et vero nisi!</p>
+
+
+<script>var elements = {
+    top: $('#selector-top'),
+    left: $('#selector-left'),
+    right: $('#selector-right'),
+    bottom: $('#selector-bottom')
+};
+  var lastTarget=null;
+//var picker = new Picker();
+
+$(document).mousemove(function(event) {
+    if(event.target.id.indexOf('selector') !== -1  || event.target.tagName === 'HTML') return;
+
+  if(hasParentClass(event.target,"picker_wrapper"))
+    return;
+
+    //if(!lastTarget ||(lastTarget && lastTarget !=event.target))
+  //  {
+    //picker.hide();
+    //picker = new Picker(event.target);
+    //}
+
+    //lastTarget = event.target;
+    var $target = $(event.target);
+        targetOffset = $target[0].getBoundingClientRect(),
+        targetHeight = targetOffset.height,
+        targetWidth  = targetOffset.width;
+    console.log(targetOffset);
+
+    elements.top.css({
+        left:  (targetOffset.left - 4),
+        top:   (targetOffset.top - 4),
+        width: (targetWidth + 5)
+    });
+    elements.bottom.css({
+        top:   (targetOffset.top + targetHeight + 1),
+        left:  (targetOffset.left  - 3),
+        width: (targetWidth + 4)
+    });
+    elements.left.css({
+        left:   (targetOffset.left  - 5),
+        top:    (targetOffset.top  - 4),
+        height: (targetHeight + 8)
+    });
+    elements.right.css({
+        left:   (targetOffset.left + targetWidth + 1),
+        top:    (targetOffset.top  - 4),
+        height: (targetHeight + 8)
+    });
+
+
+});
+
+ //picker.onChange = function(color) {
+//   window.alert('color changed');
+  //      lastTarget.style.background = color.rgbaString;
+  //  };
+
+ //picker.onDone = function(color) {
+///   window.alert('Done!');
+  //      lastTarget.style.background = color.rgbaString;
+  //  };
+
+function hasParentClass(child, classname){
+  if(child.className.split(' ').indexOf(classname) >= 0) return true;
+  try{
+    //Throws TypeError if child doesn't have parent any more
+    return child.parentNode && hasParentClass(child.parentNode, classname);
+  }catch(TypeError){
+    return false;
+  }
+}
+</script>
+</body>
+</html>
