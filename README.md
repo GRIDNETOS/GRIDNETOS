@@ -1,4 +1,5 @@
 
+  
 <p align="center">What you are about to Discover is the very first, 100% decentralized Operating System.</p>
 
 ###
@@ -94,5 +95,21 @@
 ###
 
 <p align="left">Additional guidelines are available at https://mag.gridnet.org and https://gridnet.org. Now, pay special attention to https://talk.gridnet.org , even though full docs are pending we can guarantee that Wizards would aid you with development with any idea you might have right away, just let them know on the forums what you need and they would gladly assist!</p>
+
+###
+
+<p align="center"><b>What to expect?</b></p>
+
+###
+
+<p align="left"> We are to be making the entire source code of GRIDNET OS available right over here. That includes source codes of the iOS / Android mobile apps, source codes of nodes comprising the decentralized State-Machine (C++) and source code of components running straight within the web-browser (ECMA6).</p>
+
+###
+
+<p align="center"><b>Why not make the entire source code available right away?</b></p>
+
+###
+
+GRIDNET OS consumed millions of dollars in development. We want to protect our interests and interests of our investors to the best extent possible. In the decentralized realm there are lots and lots of hyenas (such as Dominic W. from ICP/dFinity just waiting to scrape all the code available around and claim as theirs). As soon as all of our investment rounds are over we will be releasing 100% of the code base.  If you are worried about code quality, worry no more. The entire development process has been streamed and recorded LIVE on YouTube almost each and every day since the early 2017. There are now well over 35 TB of live programming sessions stored by Google.</p>
 
 ###
