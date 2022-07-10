@@ -32,7 +32,7 @@
 
 ###
 
-<p align="left">3. Access the ⋮⋮⋮Terminal Services and Enoy!</p>
+<p align="left">3. Access the ⋮⋮⋮Terminal Services and Enjoy!</p>
 
 ###
 
