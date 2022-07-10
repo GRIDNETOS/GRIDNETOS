@@ -22,7 +22,7 @@
 
 ###
 
-<p align="center">Quick Start Guide</p>
+<p align="center"><b>Quick Start Guide</b></p>
 
 ###
 
@@ -42,7 +42,7 @@
 
 ###
 
-<p align="center">What's In The Repository</p>
+<p align="center"><b>What's In The Repository</b></p>
 
 ###
 
@@ -50,7 +50,7 @@
 
 ###
 
-<p align="center">Learning Curve</p>
+<p align="center"><b>Learning Curve</b></p>
 
 ###
 
@@ -58,7 +58,7 @@
 
 ###
 
-<p align="center">How to Create an UI dApp</p>
+<p align="center"><b>How to Create an UI dApp</b></p>
 
 ###
 
@@ -66,7 +66,7 @@
 
 ###
 
-<p align="center">How to Deploy an UI dapp</p>
+<p align="center"><b>How to Deploy an UI dapp</b></p>
 
 ###
 
@@ -74,7 +74,7 @@
 
 ###
 
-<p align="center">How to install an UI dApp?</p>
+<p align="center"><b>How to install an UI dApp?</b></p>
 
 ###
 
@@ -82,7 +82,7 @@
 
 ###
 
-<p align="center">Where to Learn?</p>
+<p align="center"><b>Where to Learn?</b></p>
 
 ###
 
