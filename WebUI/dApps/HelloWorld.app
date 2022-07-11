@@ -58,11 +58,11 @@ var apptemplateBody = `<link rel="stylesheet" href="/css/windowDefault.css" />
 //Window Body - END
 
 //Constructor - BEGIN
-class CUIAppTemplate extends CWindow {
+class CMyHelloWorld extends CWindow {
 
   //position.positionX, position.positionY, width, height, data, dataType, filePath, thread
   constructor(positionX, positionY, width, height, data, dataType, filePath, thread) {
-    super(positionX, positionY, width, height, apptemplateBody, "UIAppTemplate", CUIAppTemplate.getIcon(), true); //use Shadow-DOM by default
+    super(positionX, positionY, width, height, apptemplateBody, "My Hello World App", CMyHelloWorld.getIcon(), true); //use Shadow-DOM by default
 
     this.setThreadID = null; //by default there's no need for a dedicated Decentralized Processing Thread.
     //Developers should prefere usage of public 'data' thread for retreval of information instead.
@@ -103,7 +103,7 @@ class CUIAppTemplate extends CWindow {
 
   //Package Info - BEGIN
   static getPackageID() {
-    return "org.gridnetproject.UIdApps.UIAppTemplate";
+    return "org.gridnetproject.UIdApps.helloWorld";
   }
 
   static getDefaultCategory() {
@@ -116,7 +116,7 @@ class CUIAppTemplate extends CWindow {
 
   //Settings Manager Support - BEGIN (Note Initialize() and static member fields at the bottom)
   static getSettings() { //[required]
-    return CUIAppTemplate.sCurrentSettings; //Important: static field [required]
+    return CMyHelloWorld.sCurrentSettings; //Important: static field [required]
     //take look at the bottom of this file, right after CBrowser's body.
   }
 
@@ -124,18 +124,18 @@ class CUIAppTemplate extends CWindow {
     if (!(sets instanceof CAppSettings))
       return false;
 
-    CUIAppTemplate.sCurrentSettings = sets;
+    CMyHelloWorld.sCurrentSettings = sets;
     return true;
   }
 
   loadSettings() {
-    CVMContext.getInstance().getSettingsManager.loadSettings(CUIAppTemplate.getPackageID());
+    CVMContext.getInstance().getSettingsManager.loadSettings(CMyHelloWorld.getPackageID());
     return this.activateSetings();
   }
 
   activateSetings() {
 
-    let sets = CUIAppTemplate.getSettings();
+    let sets = CMyHelloWorld.getSettings();
     let settings = null;
     let pack = null;
     let elem = null;
@@ -147,7 +147,7 @@ class CUIAppTemplate extends CWindow {
     if (sets.getVersion == 1) {
       settings = sets.getData;
       if (settings == null || typeof settings === 'undefined') {
-        sets = CUIAppTemplate.getDefaultSettings();
+        sets = CMyHelloWorld.getDefaultSettings();
         settings = sets.getData;
       }
     } else return false;
@@ -167,16 +167,16 @@ class CUIAppTemplate extends CWindow {
   saveSettings() {
     //Two scenarios:
     //A)- either prepare the default app-specific container
-    /*let settingsData = CUIAppTemplate.getDefaultSettings().getData; //getData should contain a default app-specific data-container.
+    /*let settingsData = CMyHelloWorld.getDefaultSettings().getData; //getData should contain a default app-specific data-container.
 
     if(!settingsData)
     return;
     //Important: fill-in the defaults' container with current state's data
     // store settings ex: settingsData.layout = this.mGrid.save(false, true);
 
-    let sets = new CAppSettings(CUIAppTemplate.getPackageID(), settingsData);
+    let sets = new CAppSettings(CMyHelloWorld.getPackageID(), settingsData);
 
-    CUIAppTemplate.setSettings = sets;
+    CMyHelloWorld.setSettings = sets;
 */
     //OR - simply get a reference to current settings (set through setSettings() or with defaults)
     let sets = this.getSettings;
@@ -205,7 +205,7 @@ class CUIAppTemplate extends CWindow {
             content: 'dApps',
             subGrid: {
               children: [],
-              ...CUIAppTemplate.getDefSubOption()
+              ...CMyHelloWorld.getDefSubOption()
             }
           },
           {
@@ -215,14 +215,14 @@ class CUIAppTemplate extends CWindow {
             content: 'Explore',
             subGrid: {
               children: exploreDefs,
-              ...CUIAppTemplate.getDefSubOption()
+              ...CMyHelloWorld.getDefSubOption()
             }
           },
         ]
       },
       version: 1
     }
-    return new CAppSettings(CUIAppTemplate.getPackageID(), obj);
+    return new CAppSettings(CMyHelloWorld.getPackageID(), obj);
   }
 
   static getDefSubOption() {
@@ -245,7 +245,7 @@ class CUIAppTemplate extends CWindow {
       this.mTools.logEvent('['+this.getPackageID + ']\'s settings activated!',
         eLogEntryCategory.dApp, 0, eLogEntryType.notification);
     } else {
-      CUIAppTemplate.setSettings(this.getDefaultSettings());
+      CMyHelloWorld.setSettings(this.getDefaultSettings());
       this.mTools.logEvent('Failed to activate provided settings for ['+this.getPackageID + ']. Assuming defaults!',
         eLogEntryCategory.dApp, 0, eLogEntryType.failure);
     }
@@ -413,6 +413,6 @@ class CUIAppTemplate extends CWindow {
 
 //Callback Functions - END
 }
-CUIAppTemplate.sCurrentSettings = new CAppSettings(CUIAppTemplate.getPackageID);
+CMyHelloWorld.sCurrentSettings = new CAppSettings(CMyHelloWorld.getPackageID);
 
-export default CUIAppTemplate;
+export default CMyHelloWorld;
