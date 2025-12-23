@@ -64,6 +64,46 @@ class CUIAppTemplate extends CWindow {
   constructor(positionX, positionY, width, height, data, dataType, filePath, thread) {
     super(positionX, positionY, width, height, apptemplateBody, "UIAppTemplate", CUIAppTemplate.getIcon(), true); //use Shadow-DOM by default
 
+    // ============================================================================
+    // GRIDNET OS CURTAIN WHITELIST (Optional but recommended for interactive UIs)
+    // ============================================================================
+    // Prevents loading curtain from showing during normal user interactions with
+    // sliders, spinners, and live-updating displays. Call this AFTER super() and
+    // BEFORE UI initialization.
+    //
+    // Whitelist elements that cause frequent DOM mutations:
+    // - Interactive controls (sliders, spinner buttons, draggable elements)
+    // - Live displays (counters, real-time data, calculated values)
+    // - Animation containers
+    //
+    // The whitelist is RECURSIVE - whitelisting a parent automatically covers
+    // all child elements up to maxDepth (default: 5) levels.
+    //
+    // See: lib/window.js - addCurtainWhitelist() for full documentation
+    // ============================================================================
+    this.addCurtainWhitelist({
+      classNames: [
+        // Example: Interactive slider elements
+        'slider-handle',
+        'slider-track',
+        'slider-fill',
+        // Example: Spinner buttons for number inputs
+        'spinner-button',
+        'number-input-wrapper',
+        // Example: Live-updating displays
+        'live-counter',
+        'real-time-value',
+        'auto-update'
+      ],
+      ids: [
+        // Example: Specific elements by ID
+        'main-balance-display',
+        'calculated-total',
+        'progress-indicator'
+      ],
+      maxDepth: 5 // Check up to 5 parent levels
+    });
+
     this.setThreadID = null; //by default there's no need for a dedicated Decentralized Processing Thread.
     //Developers should prefere usage of public 'data' thread for retreval of information instead.
     this.mTools = CTools.getInstance();
@@ -76,11 +116,154 @@ class CUIAppTemplate extends CWindow {
     CVMContext.getInstance().addNewDFSMsgListener(this.newDFSMsgCallback.bind(this), this.mID);
     CVMContext.getInstance().addNewGridScriptResultListener(this.newGridScriptResultCallback.bind(this), this.mID);
     this.loadLocalData();
-    this.controllerThreadInterval = 1000;
+    this.mControllerThreadInterval = 1000;
     this.mControlerExecuting = false;
     this.mControler = 0;
 
   }
+  // ============================================================================
+  // CRITICAL UI dApp DEVELOPMENT PATTERNS
+  // ============================================================================
+  //
+  // 1. ACCESSING SHADOW DOM ELEMENTS
+  // ────────────────────────────────────────────────────────────────────────
+  // Use getControl(id) to access elements within the Shadow DOM.
+  // DO NOT use document.getElementById() - it won't find shadow DOM elements!
+  //
+  // CORRECT:
+  //   const button = this.getControl('my-button');
+  //   const input = this.getControl('user-input');
+  //
+  // INCORRECT:
+  //   const button = document.getElementById('my-button'); // Won't work!
+  //
+  // ────────────────────────────────────────────────────────────────────────
+  //
+  // 2. QUERY SELECTORS IN SHADOW DOM
+  // ────────────────────────────────────────────────────────────────────────
+  // Use this.getBody for shadow DOM root:
+  //
+  //   const elements = this.getBody.querySelectorAll('.my-class');
+  //   const firstDiv = this.getBody.querySelector('div.container');
+  //
+  // ────────────────────────────────────────────────────────────────────────
+  //
+  // 3. EVENT LISTENERS
+  // ────────────────────────────────────────────────────────────────────────
+  // Always bind 'this' context when setting up event listeners:
+  //
+  //   button.addEventListener('click', this.handleClick.bind(this));
+  //   // OR use arrow functions:
+  //   button.addEventListener('click', (e) => this.handleClick(e));
+  //
+  // ────────────────────────────────────────────────────────────────────────
+  //
+  // 4. CURTAIN CONTROL
+  // ────────────────────────────────────────────────────────────────────────
+  // Pause curtain during operations that cause many DOM changes:
+  //
+  //   this.pauseCurtainFor(3); // Pause for 3 seconds
+  //   // ... perform bulk DOM updates ...
+  //
+  // Show curtain manually for long operations:
+  //
+  //   this.showCurtain(true, false, false);
+  //   // ... perform operation ...
+  //   this.hideCurtain();
+  //
+  // ────────────────────────────────────────────────────────────────────────
+  //
+  // 5. NETWORK REQUESTS
+  // ────────────────────────────────────────────────────────────────────────
+  // Always track network request IDs:
+  //
+  //   const reqID = CVMContext.getInstance().requestNetworkData(...);
+  //   this.registerNetworkRequest(reqID);
+  //
+  // Then in callbacks, check ownership:
+  //
+  //   if (!this.hasNetworkRequestID(msg.getReqID)) return;
+  //
+  // ────────────────────────────────────────────────────────────────────────
+  //
+  // 6. SETTINGS PERSISTENCE
+  // ────────────────────────────────────────────────────────────────────────
+  // Load settings in initialize():
+  //
+  //   if (this.loadSettings()) {
+  //     // Settings loaded successfully
+  //   } else {
+  //     // Use defaults
+  //     CMyApp.setSettings(CMyApp.getDefaultSettings());
+  //   }
+  //
+  // Save settings when state changes:
+  //
+  //   this.saveSettings(); // Persists current state
+  //
+  // ────────────────────────────────────────────────────────────────────────
+  //
+  // 7. THREAD MANAGEMENT
+  // ────────────────────────────────────────────────────────────────────────
+  // Create dedicated thread if needed:
+  //
+  //   this.mControler = CVMContext.getInstance().createJSThread(
+  //     this.mControllerThreadF.bind(this),
+  //     this.getProcessID,
+  //     1000 // Interval in ms
+  //   );
+  //
+  // Always stop threads in closeWindow():
+  //
+  //   if (this.mControler > 0) {
+  //     CVMContext.getInstance().stopJSThread(this.mControler);
+  //   }
+  //
+  // ────────────────────────────────────────────────────────────────────────
+  //
+  // 8. WINDOW GEOMETRY
+  // ────────────────────────────────────────────────────────────────────────
+  // Get current dimensions:
+  //
+  //   const width = this.getClientWidth;
+  //   const height = this.getClientHeight;
+  //
+  // React to resize events:
+  //
+  //   finishResize(isFallbackEvent) {
+  //     super.finishResize(isFallbackEvent);
+  //     // Update layout based on new size
+  //   }
+  //
+  // ────────────────────────────────────────────────────────────────────────
+  //
+  // 9. USER DIALOGS
+  // ────────────────────────────────────────────────────────────────────────
+  // Ask user for input:
+  //
+  //   this.askString('Title', 'Question?', this.handleResponse.bind(this), true);
+  //
+  // Show notifications:
+  //
+  //   this.mTools.logEvent('Message', eLogEntryCategory.dApp, 0, eLogEntryType.notification);
+  //
+  // ────────────────────────────────────────────────────────────────────────
+  //
+  // 10. CLEANUP
+  // ────────────────────────────────────────────────────────────────────────
+  // Always clean up in closeWindow():
+  //
+  //   closeWindow() {
+  //     // Stop threads
+  //     if (this.mControler > 0) {
+  //       CVMContext.getInstance().stopJSThread(this.mControler);
+  //     }
+  //     // Clear event listeners
+  //     // Save state if needed
+  //     super.closeWindow();
+  //   }
+  //
+  // ============================================================================
   //Constructor - END
 
   //Register File Handlers - BEGIN
@@ -238,7 +421,7 @@ class CUIAppTemplate extends CWindow {
   //internal processing queue
   {
     this.loadSettings();
-    this.mControler = setInterval(this.mControlerThreadF.bind(this), this.controllerThreadInterval);
+    this.mControler =  CVMContext.getInstance().createJSThread(this.mControllerThreadF.bind(this), this.getProcessID, this.mControllerThreadInterval);
 
     //Settings Support - BEGIN
     if (this.loadSettings()) {
@@ -253,17 +436,17 @@ class CUIAppTemplate extends CWindow {
   }
 
 // Custom Local Thread Logic - BEGIN
-  mControlerThreadF() {
-    if (this.mControlerExecuting)
+  mControllerThreadF() {
+    if (this.mControllerExecuting)
       return false;
 
-    this.mControlerExecuting = true; //mutex protection
+    this.mControllerExecuting = true; //mutex protection
 
     //Operational logic - BEGIN
 
     //Operational logic - END
 
-    this.mControlerExecuting = false;
+    this.mControllerExecuting = false;
 
   }
 // Custom Local Thread Logic - END
@@ -307,7 +490,7 @@ class CUIAppTemplate extends CWindow {
   //remember to shut down any additional threads over here.
   closeWindow() {
     if (this.mControler > 0)
-      clearInterval(this.mControler); //shut-down the thread if active
+      CVMContext.getInstance().stopJSThread(this.mController);//shut-down the thread if active
     super.closeWindow();
   }
 
