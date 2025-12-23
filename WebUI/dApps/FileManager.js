@@ -13,6 +13,8 @@ import {
 import {
   CContentHandler
 } from "/lib/AppSelector.js"
+
+import { CGLink, CGLinkHandler } from "/lib/GLink.js"
 const fileManagerBodyHTML = `
 
 
@@ -607,47 +609,59 @@ class CFileManager extends CWindow {
 
       $(this.getBody).find('.fmFile').contextMenu('hide');
       $(this.getBody).find('.fmFile').contextMenu('destroy');
-      $(document).find('.context-menu-list').last().removeAttr("style"); //just in case
+    //  $(document).find('.context-menu-list').last().removeAttr("style"); //just in case
 
     } catch (err) {
 
     }
   }
-  showContextMenu()
-  {
+  showContextMenu() {
     //hack ensures the context menu is visible.
     //  $(document).find('.context-menu-list').show();
     //  $(document).find('.context-menu-list').last().css("display", "inline-block");
-     //setTimeout(this.showContextMenu, 50);
+    //setTimeout(this.showContextMenu, 50);
     // setTimeout(this.showContextMenu, 150);
     //  setTimeout(this.showContextMenu, 350);
   }
 
   hideContextMenu() { //hack to hide away the context menu.
     //a work around a bog in the library.
-  //  try {
+    try {
+
 
       $(this.getBody).find('.fmFile').contextMenu('hide');
-    //  $("#mydiv").css({top: 200, left: 200});
-        $(document).find('.context-menu-list').css({top: 200, left: -100000});
-    //  $(document).find('.context-menu-list').removeAttr("style");
+      $(this.getBody).find('.fmElement').removeClass('context-menu-active');
+      $(document).find('.context-menu-item').removeClass('context-menu-visible');
 
-  //  } catch (err) {
+      //  $("#mydiv").css({top: 200, left: 200});
 
-  //  }
+      //  $(document).find('.context-menu-list').removeAttr("style");
+
+    } catch (err) {
+      console.log("error while hiding context menu.");
+    }
+    setTimeout(function(){
+      if(this.mWindowManager.getLatestLeftClickTimestamp < this.mWindowManager.getLatestContextMenuTimestamp)
+           return;
+      $(document).find('.context-menu-list').css("display", "none");
+  }.bind(this), 1500)
+
   }
   closeWindow() {
     document.removeEventListener('click', this.mGlobalClickListener);
+    document.removeEventListener('mousedown', this.mGlobalClickListener);
     this.destroyContextMenu();
     super.closeWindow();
   }
   //HTML code END
-  constructor(positionX, positionY, width, height) {
+  constructor(positionX, positionY, width, height, data = null, dataType = eDataType.bytes, filePath = null, thread = null) {
 
-    super(positionX, positionY, width, height, fileManagerBodyHTML, "File Manager", CFileManager.getIcon(), true);
+    super(positionX, positionY, width, height, fileManagerBodyHTML, "File Manager", CFileManager.getIcon(), true, data, dataType, filePath, thread);
     this.mGlobalClickListener = this.globalOnClickHandler.bind(this);
     document.addEventListener("click", this.mGlobalClickListener);
-
+    document.addEventListener("mousedown", this.mGlobalClickListener);
+    this.mVMContext = CVMContext.getInstance();
+    this.mWindowManager = this.mVMContext.getWindowManager;
     this.mHasCommittableOperation = false;
     this.mFileInfoCache = {};
     this.mHasActiveThread = false;
@@ -660,6 +674,7 @@ class CFileManager extends CWindow {
     this.mHistoryIndex = 0;
     this.mEditingItemUIRequestID = null;
     this.setThreadID = 'FS_THREAD_' + this.getProcessID;
+    this.mInitialFilePath = filePath; // Store the initial file path for later navigation
     this.mMetaParser = new CVMMetaParser();
     this.mHtmlEntries = [];
     this.setWindowOverflowMode = eWindowOverflowMode.hidden;
@@ -668,9 +683,9 @@ class CFileManager extends CWindow {
     this.mVisibleFilesCount = 0;
     this.mVisibleFoldersCount = 0;
     this.mVisibleStateDomainsCount = 0;
-    CVMContext.getInstance().addNewDFSMsgListener(this.newDFSMsgCallback.bind(this), this.mID);
-    CVMContext.getInstance().addVMStateChangedListener(this.VMStateChangedCallback.bind(this), this.mID);
-    CVMContext.getInstance().addNewConsensusActionListener(this.newConsensusActionCallback.bind(this), this.mID);
+    this.mVMContext.addNewDFSMsgListener(this.newDFSMsgCallback.bind(this), this.mID);
+    this.mVMContext.addVMStateChangedListener(this.VMStateChangedCallback.bind(this), this.mID);
+    this.mVMContext.addNewConsensusActionListener(this.newConsensusActionCallback.bind(this), this.mID);
     this.mOptions = {
       // CSS Class to add to the drop element when a drag is active
       dragClass: "drag",
@@ -1060,9 +1075,19 @@ class CFileManager extends CWindow {
     //shadow.appendChild(script);
     this.showCurtain(true, true, true);
 
-    if (CVMContext.getInstance().isLoggedIn)
+    // Check if launched via GLink
+    if (this.wasLaunchedViaGLink) {
+      console.log('[FileManager] Launched via GLink, processing...');
+      this.processGLink(this.getGLinkData);
+    }
+    // Check if a specific file path was provided at launch
+    else if (this.mInitialFilePath) {
+      this.navigateToPath(this.mInitialFilePath);
+    } else if (CVMContext.getInstance().isLoggedIn) {
       this.takeUserToHomeDir(); //ony once user is ready take him to his home directory
-    else this.showWorld();
+    } else {
+      this.showWorld();
+    }
 
   }
   refreshPathInUI() {
@@ -1165,6 +1190,27 @@ class CFileManager extends CWindow {
     return this.mCurrentPath;
   }
 
+  /**
+   * @brief Navigate to a specific path in the file system
+   * @param {string} path - The absolute path to navigate to (e.g., "/address" or "/address/Documents")
+   */
+  navigateToPath(path) {
+    // Ensure path starts with /
+    if (!path.startsWith('/')) {
+      path = '/' + path;
+    }
+
+    this.setCurrentPath = path;
+
+    if (CVMContext.getInstance().getConnectionState != eConnectionState.connected) {
+      this.showMessageBox("Oppps...", "You are not connected to the ⋮⋮⋮ Network.");
+      return false;
+    }
+
+    this.addNetworkRequestID(CVMContext.getInstance().getFileSystem.doCD(this.mCurrentPath, true, false, false, this.getThreadID).getReqID);
+    return true;
+  }
+
   takeUserToHomeDir() {
     let context = CVMContext.getInstance();
     if (context.isLoggedIn) { //Teleport user to his home-directory - BEGIN
@@ -1187,6 +1233,8 @@ class CFileManager extends CWindow {
   }
 
   pushFileToView(name, refresh = false) {
+        name = name.trim();
+        name = name.replace(/\0/g, '')
     this.mHtmlEntries.push('<div class="fmElement fmFile"><img class="folderElement context-menu-one btn btn-neutral" src="/images/file.png"  title=&#39;' + name +
       '&#39; onclick="let window = gWindowManager.getWindowByID($(this).closest(&#39;.idContainer&#39;).find(&#39;#windowIDField&#39;).first().val()); window.addNetworkRequestID(CVMContext.getInstance().getFileSystem.doGetFile(&#39;' + name +
       '&#39;,false,window.getThreadID ).getReqID);"> <div class="fmElementNameContainer">' + name + "</div>");
@@ -1197,6 +1245,8 @@ class CFileManager extends CWindow {
   }
 
   pushDirectoryToView(name, refresh = false) {
+    name = name.trim();
+    name = name.replace(/\0/g, '')
     this.mHtmlEntries.push('<div class="fmElement fmDirectory"><img class="folderElement context-menu-one btn btn-neutral" src="/images/folder.png"   title=&#39;' + name +
       '&#39;  onclick="let window = gWindowManager.getWindowByID($(this).closest(&#39;.idContainer&#39;).find(&#39;#windowIDField&#39;).first().val()); window.cdEdInto(&#39;' + name + '&#39;); window.addNetworkRequestID(CVMContext.getInstance().getFileSystem.doCD(&#39;' + name +
       '&#39;, true, false, false, window.getThreadID).getReqID); window.addNetworkRequestID(CVMContext.getInstance().getFileSystem.doLS(window.getThreadID).getReqID);"> <div class="fmElementNameContainer">' + name + "</div>");
@@ -1206,6 +1256,8 @@ class CFileManager extends CWindow {
     }
   }
   pushStateDomainToView(name, refresh = false) {
+    name = name.trim();
+    name = name.replace(/\0/g, '')
     this.mHtmlEntries.push('<div class="fmElement fmDomain"><img class="folderElement" src="/images/domain.png"   title=&#39;' + name +
       '&#39;  onclick="let window = gWindowManager.getWindowByID($(this).closest(&#39;.idContainer&#39;).find(&#39;#windowIDField&#39;).first().val()); window.cdEdInto(&#39;' + name + '&#39;); window.addNetworkRequestID(CVMContext.getInstance().getFileSystem.doCD(&#39;' + name +
       '&#39;, true, false, false, window.getThreadID).getReqID); window.addNetworkRequestID(CVMContext.getInstance().getFileSystem.doLS(window.getThreadID).getReqID);"><div class="fmElementNameContainer">' + name + "</div>");
@@ -1215,14 +1267,19 @@ class CFileManager extends CWindow {
     }
   }
 
-  globalOnClickHandler() {
-    this.hideContextMenu();
+  globalOnClickHandler(e) {
+    if(e.buttons==1)//only left mouse button was pressed.
+    {
+        if(!this.getIsMouseWithin || (this.mWindowManager.getLatestLeftClickTimestamp < this.mWindowManager.getLatestContextMenuTimestamp))
+        return;
+      this.hideContextMenu();
+    }
   }
 
   elemOnContext(e) {
     let fileName = $(e.target.parentElement).find('.fmElementNameContainer')[0].innerHTML;
     this.setSelectedElementPath = this.getCurrentPath + fileName;
-   this.showContextMenu();
+    this.showContextMenu();
     //fmElementNameContainer
   }
   set setTargetPackageID(id) {
@@ -1268,9 +1325,9 @@ class CFileManager extends CWindow {
     let menuContainer = this.getBodyRoot;
     $(table).contextMenu({
       selector: '.fmFile',
-    //  appendTo: menuContainer,
-    autoHide: true,
-    //animation: `{duration: 500, show: 'fadeIn', hide: 'fadeOut'}`,
+      //  appendTo: menuContainer,
+      autoHide: true,
+      //animation: `{duration: 500, show: 'fadeIn', hide: 'fadeOut'}`,
       callback: function(key, options) {
         //var m = "clicked: " + key + " on " + $(this).text();
         //window.console && console.log(m) || alert(m);
@@ -1334,7 +1391,7 @@ class CFileManager extends CWindow {
           let sType = sections[i].getType;
 
           if (sType == eVMMetaSectionType.directoryListing) {
-            this.destroyContextMenu();
+            this.hideContextMenu();
             this.mCurtainOverrideObserver = false; //override DOM observer no more. Data available.
             this.setCurrentPath = gTools.arrayBufferToString(sections[i].getMetaData);
 
@@ -1569,6 +1626,143 @@ class CFileManager extends CWindow {
 
       }
   }
+
+  // ============ GLink Support - BEGIN ============
+  // FileManager Action IDs:
+  // 1 = Navigate to folder path
+
+  /**
+   * @brief Process GLink data when launched via deep link
+   * @param {Object} glinkData - Parsed GLink data { view, action, data }
+   * @returns {boolean} True if processed successfully
+   */
+  processGLink(glinkData) {
+    const glinkHandler = CGLinkHandler.getInstance();
+
+    if (!glinkData) {
+      console.warn('[FileManager] No GLink data to process');
+      glinkHandler.rejectGLink('No GLink data provided');
+      return false;
+    }
+
+    console.log('[FileManager] Processing GLink:', glinkData);
+
+    // Accept the GLink - acknowledge receipt
+    glinkHandler.acceptGLink('FileManager processing...');
+
+    const { action, data } = glinkData;
+
+    // Handle specific actions (numeric action IDs)
+    if (action !== undefined && action !== null) {
+      switch (action) {
+        case 1: // Navigate to folder path
+          if (data?.filePath) {
+            console.log('[FileManager] GLink Action 1: Navigating to path:', data.filePath);
+            this.navigateToPathWithRetry(data.filePath, glinkHandler);
+            return true;
+          }
+          break;
+
+        default:
+          console.warn('[FileManager] Unknown GLink action ID:', action);
+          glinkHandler.rejectGLink(`Unknown action ID: ${action}`);
+          return false;
+      }
+    }
+
+    // Fallback: Handle navigation to specific folder path (legacy support)
+    if (data?.filePath) {
+      console.log('[FileManager] GLink: Navigating to path:', data.filePath);
+      this.navigateToPathWithRetry(data.filePath, glinkHandler);
+      return true;
+    }
+
+    console.log('[FileManager] GLink: No filePath specified');
+    glinkHandler.rejectGLink('No file path specified');
+    return false;
+  }
+
+  /**
+   * @brief Navigate to path with connection retry logic
+   * @param {string} filePath - Path to navigate to
+   * @param {CGLinkHandler} [glinkHandler] - Optional GLink handler for confirmation
+   */
+  navigateToPathWithRetry(filePath, glinkHandler = null) {
+    let retryCount = 0;
+    const maxRetries = 20; // 10 seconds max
+
+    // Wait for network connection before navigating
+    const checkAndNavigate = () => {
+      const ctx = CVMContext.getInstance();
+      if (ctx.getConnectionState === eConnectionState.connected) {
+        this.navigateToPath(filePath);
+        // Confirm GLink processing after successful navigation
+        if (glinkHandler) {
+          glinkHandler.confirmGLinkProcessed('FileManager: Navigation complete');
+        }
+      } else {
+        retryCount++;
+        if (retryCount < maxRetries) {
+          // Retry after a short delay if not connected
+          setTimeout(checkAndNavigate, 500);
+        } else {
+          // Timeout - reject GLink
+          if (glinkHandler) {
+            glinkHandler.rejectGLink('Connection timeout');
+          }
+        }
+      }
+    };
+
+    // Start checking connection
+    setTimeout(checkAndNavigate, 100);
+  }
+
+  // --- FileManager GLink Action IDs ---
+  // 1 = Navigate to folder path
+
+  /**
+   * @brief Create a GLink for a specific folder path
+   * @param {string} folderPath - Path to folder
+   * @param {number} [action=1] - Action ID (default: 1 = Navigate)
+   * @returns {string} GLink URL
+   * @static
+   */
+  static createGLink(folderPath, action = 1) {
+    return CGLink.create(
+      CFileManager.getPackageID(),
+      null,     // view
+      action,   // action: 1 = Navigate to path
+      { filePath: folderPath }
+    );
+  }
+
+  /**
+   * @brief Create a GLink for the current folder
+   * @returns {string} GLink URL for current folder
+   */
+  createCurrentFolderGLink() {
+    return CFileManager.createGLink(this.getCurrentPath);
+  }
+
+  /**
+   * @brief Copy current folder GLink to clipboard
+   * @returns {Promise<boolean>} True if successful
+   */
+  async copyCurrentFolderGLinkToClipboard() {
+    const glink = this.createCurrentFolderGLink();
+    const success = await CGLink.copyToClipboard(glink);
+
+    if (success) {
+      this.showMessageBox('GLink Copied! 📋', 'Folder link copied to clipboard.\nShare it to let others navigate directly to this location.');
+    } else {
+      this.showMessageBox('Copy Failed', 'Unable to copy GLink to clipboard.');
+    }
+
+    return success;
+  }
+
+  // ============ GLink Support - END ============
 }
 
 export default CFileManager;
