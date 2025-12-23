@@ -29,6 +29,8 @@ import {
   CSettingsManager
 } from "/lib/SettingsManager.js"
 
+import { CGLink, CGLinkHandler } from "/lib/GLink.js"
+
 var imageViewerBody = `
 <link rel="stylesheet" href="/css/windowDefault.css" />
 <link rel="stylesheet" href="/css/viewer.css">
@@ -269,6 +271,12 @@ class CImageViewer extends CWindow {
     }
 
     //Settings Support - END
+
+    // Check if launched via GLink
+    if (this.wasLaunchedViaGLink) {
+      console.log('[ImageViewer] Launched via GLink, processing...');
+      this.processGLink(this.getGLinkData);
+    }
   }
 
 
@@ -434,6 +442,160 @@ class CImageViewer extends CWindow {
       let metaData = this.mMetaParser.parse(dfsMsg.getData1);
     }
   }
+
+  // ============ GLink Support - BEGIN ============
+  // ImageViewer Action IDs:
+  // 1 = View image
+
+  /**
+   * @brief Process GLink data when launched via deep link
+   * @param {Object} glinkData - Parsed GLink data { view, action, data }
+   * @returns {boolean} True if processed successfully
+   */
+  processGLink(glinkData) {
+    const glinkHandler = CGLinkHandler.getInstance();
+
+    if (!glinkData) {
+      console.warn('[ImageViewer] No GLink data to process');
+      glinkHandler.rejectGLink('No GLink data provided');
+      return false;
+    }
+
+    console.log('[ImageViewer] Processing GLink:', glinkData);
+
+    // Accept the GLink - acknowledge receipt
+    glinkHandler.acceptGLink('ImageViewer processing...');
+
+    const { action, data } = glinkData;
+
+    // Handle specific actions (numeric action IDs)
+    if (action !== undefined && action !== null) {
+      switch (action) {
+        case 1: // View image
+          if (data?.filePath) {
+            console.log('[ImageViewer] GLink Action 1: Loading image:', data.filePath);
+            this.loadImageFromGLink(data.filePath, glinkHandler);
+            return true;
+          }
+          break;
+
+        default:
+          console.warn('[ImageViewer] Unknown GLink action ID:', action);
+          glinkHandler.rejectGLink(`Unknown action ID: ${action}`);
+          return false;
+      }
+    }
+
+    // Fallback: Handle image file path from GLink (legacy support)
+    if (data?.filePath) {
+      console.log('[ImageViewer] GLink: Loading image:', data.filePath);
+      this.loadImageFromGLink(data.filePath, glinkHandler);
+      return true;
+    }
+
+    console.log('[ImageViewer] GLink: No filePath specified');
+    glinkHandler.rejectGLink('No file path specified');
+    return false;
+  }
+
+  /**
+   * @brief Load an image from GLink
+   * @param {string} filePath - Path to image file
+   * @param {CGLinkHandler} [glinkHandler] - Optional GLink handler for confirmation
+   */
+  loadImageFromGLink(filePath, glinkHandler = null) {
+    // Store the file path
+    this.mFilePath = filePath;
+    const fileName = CTools.getInstance().parsePath(filePath).fileName || 'Image';
+    this.setTitle(fileName + ' - Image Viewer');
+
+    // Build image URL and update viewer
+    const ctx = CVMContext.getInstance();
+    if (ctx.getCurrentNodeURI) {
+      let uri = new URL(ctx.getCurrentNodeURI);
+      uri.port = '';
+      uri = uri.toString();
+      uri = uri.slice(0, -1);
+      uri += ('/s/' + filePath);
+
+      // Update the image source
+      const imgElement = this.shadowQueryAll('#image')[0];
+      if (imgElement) {
+        imgElement.src = uri;
+        // Reinitialize viewer if needed
+        if (this.mViewer) {
+          this.mViewer.update();
+        }
+        // Confirm GLink processing
+        if (glinkHandler) {
+          glinkHandler.confirmGLinkProcessed('ImageViewer: Image loaded');
+        }
+      } else {
+        if (glinkHandler) {
+          glinkHandler.rejectGLink('Image element not found');
+        }
+      }
+    } else {
+      if (glinkHandler) {
+        glinkHandler.rejectGLink('No node URI available');
+      }
+    }
+  }
+
+  // --- ImageViewer GLink Action IDs ---
+  // 1 = View image
+
+  /**
+   * @brief Create a GLink for a specific image path
+   * @param {string} imagePath - Path to image
+   * @param {number} [action=1] - Action ID (default: 1 = View image)
+   * @returns {string} GLink URL
+   * @static
+   */
+  static createGLink(imagePath, action = 1) {
+    return CGLink.create(
+      CImageViewer.getPackageID(),
+      null,     // view
+      action,   // action: 1 = View image
+      { filePath: imagePath }
+    );
+  }
+
+  /**
+   * @brief Create a GLink for the current image
+   * @returns {string|null} GLink URL for current image, or null if no image
+   */
+  createCurrentImageGLink() {
+    if (!this.mFilePath) {
+      return null;
+    }
+    return CImageViewer.createGLink(this.mFilePath);
+  }
+
+  /**
+   * @brief Copy current image GLink to clipboard
+   * @returns {Promise<boolean>} True if successful
+   */
+  async copyCurrentImageGLinkToClipboard() {
+    const glink = this.createCurrentImageGLink();
+
+    if (!glink) {
+      this.showMessageBox('No Image', 'Open an image first to create a shareable link.');
+      return false;
+    }
+
+    const success = await CGLink.copyToClipboard(glink);
+
+    if (success) {
+      this.showMessageBox('GLink Copied! 📋', 'Image link copied to clipboard.\nShare it to let others view this image directly.');
+    } else {
+      this.showMessageBox('Copy Failed', 'Unable to copy GLink to clipboard.');
+    }
+
+    return success;
+  }
+
+  // ============ GLink Support - END ============
 }
 CImageViewer.sCurrentSettings = new CAppSettings(CImageViewer.getPackageID);
 
