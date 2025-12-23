@@ -1,6 +1,7 @@
 
 
- 
+
+
 
 ###
 <h3 align="center"><b><span style="color:cyan">⋮⋮⋮</span> GRIDNET OS</b></h3>
@@ -57,7 +58,16 @@
 
 ###
 
-<p align="left">The repository contains source codes of UI dApps currently available on GRIDNET OS. We believe the package to contain superb in-code documentation so it is a great place to get you started. These sample UI dApps take use of all of the sub-systems of GRIDNET OS. Storage, inter-browser communication through Swarms, UI mechanics, communication with the mobile app, invocation of #GridScript core apps residing on the decentralized state-machine, ad-hoc invocation of #GridScript commands, Decentralized Processing Threads, onion routing, user's settings and preferences mechanics etc. We believe the system to allow for any kind of applications you know from platforms such as Windows, Mac OS X and/or Linux.</p>
+<p align="left">As of <b>December 24th, 2025</b>, we are proud to announce that this repository now contains a vast portion of the GRIDNET Core source code! This includes:</p>
+
+<ul>
+<li><b>GRIDNETCore/GRIDNET</b> - The complete C++ source code of the GRIDNET node implementation, including the decentralized state-machine, blockchain mechanics, networking layer, cryptographic primitives, WebRTC swarm communication, and all core subsystems</li>
+<li><b>WebUI/lib</b> - JavaScript libraries powering the decentralized UI, including Swarm communication, state management, and browser-side networking</li>
+<li><b>WebUI/dApps</b> - Source codes of UI dApps currently available on GRIDNET OS including File Manager, Editor, Terminal, Wallet, Messenger, Browser, Calculator, Whiteboard, and more</li>
+<li><b>Research</b> - TLA+ formal specifications for WebRTC Swarm protocols</li>
+</ul>
+
+<p align="left">We believe the package to contain superb in-code documentation so it is a great place to get you started. These components take use of all of the sub-systems of GRIDNET OS: Storage, inter-browser communication through Swarms, UI mechanics, communication with the mobile app, invocation of #GridScript core apps residing on the decentralized state-machine, ad-hoc invocation of #GridScript commands, Decentralized Processing Threads, onion routing, user's settings and preferences mechanics etc. We believe the system to allow for any kind of applications you know from platforms such as Windows, Mac OS X and/or Linux.</p>
 
 ###
 
@@ -127,10 +137,31 @@ All in all, once your UI dApp gets commited, it would be available right away fr
 
 ###
 
-<p align="center"><b>Why not make the entire source code available right away?</b></p>
+<p align="center"><b>Open Source Release - December 24th, 2025</b></p>
 
 ###
 
-GRIDNET OS consumed millions of dollars in development. We want to protect our interests and interests of our investors to the best extent possible. In the decentralized realm there are lots and lots of hyenas (such as Dominic W. from ICP/dFinity just waiting to scrape all the code available around and claim as theirs). As soon as all of our investment rounds are over we will be releasing 100% of the code base.  If you are worried about code quality, worry no more. The entire development process has been streamed and recorded LIVE on YouTube almost each and every day since the early 2017. There are now well over 35 TB of live programming sessions stored by Google.</p>
+<p align="left">On December 24th, 2025, we have taken a major step forward by open-sourcing a vast portion of the GRIDNET Core codebase. This includes the C++ implementation of the GRIDNET node - the heart of the decentralized state-machine that powers GRIDNET OS.</p>
+
+<p align="left">The entire development process has been streamed and recorded LIVE on YouTube almost each and every day since the early 2017. There are now well over 35 TB of live programming sessions stored by Google, documenting the entire journey from concept to the robust system you see today.</p>
+
+<p align="left">We invite developers, researchers, and enthusiasts to explore the codebase, contribute, and help us build the future of decentralized computing!</p>
+
+###
+
+<p align="center"><b>What Remains Proprietary?</b></p>
+
+###
+
+<p align="left">While we have open-sourced a significant portion of the codebase, certain major components containing core intellectual property remain proprietary for now. These include:</p>
+
+<ul>
+<li><b>GridScript / GridScript++</b> - Our proprietary smart contract language and virtual machine implementation</li>
+<li>Other components containing major portions of unique IP developed over years of research</li>
+</ul>
+
+<p align="left">GRIDNET OS consumed millions of dollars in development. We want to protect our interests and interests of our investors to the best extent possible. In the decentralized realm there are unfortunately many actors ready to scrape available code and claim it as their own. Keeping these core components proprietary helps protect the Team and investors from free-riders and copycats while still allowing the community to build upon and contribute to the open-sourced portions of the system.</p>
+
+<p align="left">As our ecosystem matures and investment rounds conclude, we plan to progressively open-source additional components.</p>
 
 ###
