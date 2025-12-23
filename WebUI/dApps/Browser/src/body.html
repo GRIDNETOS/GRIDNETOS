@@ -49,6 +49,10 @@
           onclick="let window = gWindowManager.getWindowByID($($(this).closest('.idContainer')).find('#windowIDField').first().val()); if(!window.isSFOk){ window.animateCSS(this.id,'shakeX'); return}; window.goHome();  return false;">
       </div>
       <div class="category">
+        <img class="topBarIcon likeIt" alt="Home" title="Home" src="/images/heart.png"
+          onclick="let window = gWindowManager.getWindowByID($($(this).closest('.idContainer')).find('#windowIDField').first().val()); if(!window.isSFOk){ window.animateCSS(this.id,'shakeX'); return}; window.toggleFavourite();  return false;">
+      </div>
+      <div class="category">
         <img class="topBarIcon" alt="World" title="List State Domains" src="/images/world.png" onclick="
      let window = gWindowManager.getWindowByID($($(this).closest('.idContainer')).find('#windowIDField').first().val());if(CVMContext.getInstance().getConnectionState!=eConnectionState.connected)
      {
@@ -85,13 +89,11 @@
         <img src="/dApps/Browser/images/wikileaks.png" class="linkIcon" alt="Wikileaks"
           onclick="let window = gWindowManager.getWindowByID($(this).closest(&#39;.idContainer&#39;).find(&#39;#windowIDField&#39;).first().val()); window.decideBehaviourOfAddBar('https://www.wikileaks.org')"></img>
 
-      <img src="/dApps/Browser/images/google.png" class="linkIcon" alt="Google" id="google"
-        onclick="let window = gWindowManager.getWindowByID($(this).closest(&#39;.idContainer&#39;).find(&#39;#windowIDField&#39;).first().val()); window.decideBehaviourOfAddBar('https://www.google.ca')"></img>
 
     </div>
 </div>
 
-    <iframe is="x-wizardous-frame" class="viewerFrame iframeLoading" src="https://wikileaks.org/" proxyURI="[PROXY_URI]" winID="[GN_WIN_ID]"></iframe>
+    <iframe is="x-wizardous-frame" class="viewerFrame iframeLoading" loading="eager" src="https://google.com/" proxyURI="[PROXY_URI]" winID="[GN_WIN_ID]"></iframe>
     </div>
     <div class='frameOverlay'>
         </div>
@@ -101,6 +103,6 @@
     bottom: 0px;
     right: 0px;
     z-index: 1000;">
-    <button class="themeToggle" onclick="let window = gWindowManager.getWindowByID($(this).closest(&#39;.idContainer&#39;).find(&#39;#windowIDField&#39;).first().val()); window.darkMode()">Dark mode</button>
+    <button class="themeToggle"  style="display:none;"onclick="let window = gWindowManager.getWindowByID($(this).closest(&#39;.idContainer&#39;).find(&#39;#windowIDField&#39;).first().val()); window.darkMode()">Dark mode</button>
   </div>
 </form>
