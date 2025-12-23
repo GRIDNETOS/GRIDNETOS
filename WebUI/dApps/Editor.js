@@ -15,15 +15,244 @@ import {
   CContentHandler
 } from "./../lib/AppSelector.js"
 
-const editorBodyHTML = ` <!-- The toolbar will be rendered in this container. -->
-  <style>.ck-editor__editable_inline {
+import { CGLink, CGLinkHandler } from "/lib/GLink.js"
 
-}</style>
-    <div id="toolbar-container" ></div><div id='editorContainer' >
-<div id='stylecontainer'>
+const editorBodyHTML = `
 
-</div>
-    <div id='editor' ></div></div> `;
+<style>
+
+.box {
+  display: flex;
+  flex-flow: column;
+  height: 100%;
+}
+
+.box .row {
+  border: 1px dotted #0313fc;
+}
+
+.box .row.header {
+  flex: 0 1 auto;
+}
+
+.box .row.content {
+  flex: 1 1 auto;
+}
+
+.box .row.footer {
+  flex: 0 1 40px;
+}
+
+
+.ck.ck-editor
+{
+	display: flex !important;
+	flex-flow: column !important;
+	height: 100% !important;
+}
+	.ck.ck-editor__top
+	{
+		  flex: 0 1 auto !important;
+	}
+	.ck.ck-editor__main
+	{
+		  flex: 1 1 auto !important;
+	}
+
+	.ck-source-editing-area
+	{
+	    overflow: auto !important;
+          min-height: 100%;
+	}
+	.ck.ck-editor__main>.ck-editor__editable:not(.ck-focused)
+	{
+				border-top-color: #ccce !important;
+				border-right-color: transparent !important;
+				border-bottom-color: transparent !important;
+				border-left-color: transparent !important;
+	}
+	.ck.ck-editor__main>.ck-editor__editable.ck-focused:not(.ck-editor__nested-editable)
+	{				border-top-color: #ccce !important;
+					border-right-color: transparent !important;
+					border-bottom-color: transparent !important;
+					border-left-color: transparent !important;
+
+	}
+	.ck.ck-editor__editable > .ck-placeholder::before {
+	    color: #a2a4a9;
+	    font-family: Georgia;
+	}
+
+	:root {
+	    /* Overrides the border radius setting in the theme. */
+	    --ck-border-radius: 4px;
+
+	    /* Overrides the default font size in the theme. */
+	    --ck-font-size-base: 14px;
+
+	    /* Helper variables to avoid duplication in the colors. */
+	    --ck-custom-background: hsl(206deg 82% 16%);
+	    --ck-custom-foreground: hsl(255, 3%, 18%);
+	    --ck-custom-border: hsl(291deg 28% 50%);
+	    --ck-custom-white: hsl(0, 0%, 100%);
+      --ck-color-base-background: #1c353f;
+
+	    /* -- Overrides generic colors. ------------------------------------------------------------- */
+
+	    --ck-color-base-foreground: var(--ck-custom-background);
+	    --ck-color-focus-border: hsl(208, 90%, 62%);
+	    --ck-color-text: #11d9d2;
+	    --ck-color-shadow-drop: hsla(0, 0%, 0%, 0.2);
+	    --ck-color-shadow-inner: hsla(0, 0%, 0%, 0.1);
+
+	    /* -- Overrides the default .ck-button class colors. ---------------------------------------- */
+
+	    --ck-color-button-default-background: var(--ck-custom-background);
+	    --ck-color-button-default-hover-background: hsl(270, 1%, 22%);
+	    --ck-color-button-default-active-background: hsl(270, 2%, 20%);
+	    --ck-color-button-default-active-shadow: hsl(270, 2%, 23%);
+	    --ck-color-button-default-disabled-background: var(--ck-custom-background);
+
+	    --ck-color-button-on-background: var(--ck-custom-foreground);
+	    --ck-color-button-on-hover-background: hsl(255, 4%, 16%);
+	    --ck-color-button-on-active-background: hsl(255, 4%, 14%);
+	    --ck-color-button-on-active-shadow: hsl(240, 3%, 19%);
+	    --ck-color-button-on-disabled-background: var(--ck-custom-foreground);
+
+	    --ck-color-button-action-background: hsl(168, 76%, 42%);
+	    --ck-color-button-action-hover-background: hsl(168, 76%, 38%);
+	    --ck-color-button-action-active-background: hsl(168, 76%, 36%);
+	    --ck-color-button-action-active-shadow: hsl(168, 75%, 34%);
+	    --ck-color-button-action-disabled-background: hsl(168, 76%, 42%);
+	    --ck-color-button-action-text: var(--ck-custom-white);
+
+	    --ck-color-button-save: hsl(120, 100%, 46%);
+	    --ck-color-button-cancel: hsl(15, 100%, 56%);
+
+	    /* -- Overrides the default .ck-dropdown class colors. -------------------------------------- */
+
+	    --ck-color-dropdown-panel-background: var(--ck-custom-background);
+	    --ck-color-dropdown-panel-border: var(--ck-custom-foreground);
+
+	    /* -- Overrides the default .ck-splitbutton class colors. ----------------------------------- */
+
+	    --ck-color-split-button-hover-background: var(--ck-color-button-default-hover-background);
+	    --ck-color-split-button-hover-border: var(--ck-custom-foreground);
+
+	    /* -- Overrides the default .ck-input class colors. ----------------------------------------- */
+
+	    --ck-color-input-background: var(--ck-custom-background);
+	    --ck-color-input-border: hsl(257, 3%, 43%);
+	    --ck-color-input-text: hsl(0, 0%, 98%);
+	    --ck-color-input-disabled-background: hsl(255, 4%, 21%);
+	    --ck-color-input-disabled-border: hsl(250, 3%, 38%);
+	    --ck-color-input-disabled-text: hsl(0, 0%, 78%);
+
+	    /* -- Overrides the default .ck-labeled-field-view class colors. ---------------------------- */
+
+	    --ck-color-labeled-field-label-background: var(--ck-custom-background);
+
+	    /* -- Overrides the default .ck-list class colors. ------------------------------------------ */
+    	--ck-color-switch-button-inner-background:#57135a;
+	    --ck-color-list-background: var(--ck-custom-background);
+	    --ck-color-list-button-hover-background: var(--ck-color-base-foreground);
+	    --ck-color-list-button-on-background: var(--ck-color-base-active);
+	    --ck-color-list-button-on-background-focus: var(--ck-color-base-active-focus);
+	    --ck-color-list-button-on-text: var(--ck-color-base-background);
+
+	    /* -- Overrides the default .ck-balloon-panel class colors. --------------------------------- */
+
+	    --ck-color-panel-background: var(--ck-custom-background);
+	    --ck-color-panel-border: var(--ck-custom-border);
+
+	    /* -- Overrides the default .ck-toolbar class colors. --------------------------------------- */
+
+	    --ck-color-toolbar-background: var(--ck-custom-background);
+	    --ck-color-toolbar-border: var(--ck-custom-border);
+
+	    /* -- Overrides the default .ck-tooltip class colors. --------------------------------------- */
+
+	    --ck-color-tooltip-background: hsl(252, 7%, 14%);
+	    --ck-color-tooltip-text: hsl(0, 0%, 93%);
+
+	    /* -- Overrides the default colors used by the ckeditor5-image package. --------------------- */
+
+	    --ck-color-image-caption-background: hsl(0, 0%, 97%);
+	    --ck-color-image-caption-text: hsl(0, 0%, 20%);
+
+	    /* -- Overrides the default colors used by the ckeditor5-widget package. -------------------- */
+
+	    --ck-color-widget-blurred-border: hsl(0, 0%, 87%);
+	    --ck-color-widget-hover-border: hsl(43, 100%, 68%);
+	    --ck-color-widget-editable-focus-background: var(--ck-custom-white);
+
+	    /* -- Overrides the default colors used by the ckeditor5-link package. ---------------------- */
+
+	    --ck-color-link-default: hsl(190, 100%, 75%);
+	}
+
+	.ck-source-editing-area textarea {
+    background: #011022 !important;
+    color: #6fcbcb !important;
+	}
+  .ck.ck-balloon-panel {
+    position: relative  !important;
+  }
+  .ck.ck-dropdown .ck-dropdown__panel.ck-dropdown__panel_nw, .ck.ck-dropdown .ck-dropdown__panel.ck-dropdown__panel_sw
+  {
+    max-width: 500px;
+  }
+  .ck.ck-balloon-panel.ck-balloon-panel_visible
+  {
+    top: 0px;
+    left: 0px;
+    right: 0px;
+    position: relative;
+  }
+  .ck.ck-dropdown .ck-dropdown__panel.ck-dropdown__panel_ne, .ck.ck-dropdown .ck-dropdown__panel.ck-dropdown__panel_se
+  {
+    right:0px;
+  }
+  .ck-source-editing-area textarea {
+    left:0 !important;
+  }
+  .ck-toopltip{
+    display:none !important;
+  }
+  .ck-dropdown__panel.ck-dropdown__panel_se
+  {
+    left: unset !important;
+  }
+  .ck.ck-button .ck.ck-tooltip {
+	display: none !important;
+}
+
+.ck.ck-balloon-panel.ck-balloon-panel_visible
+{
+  display:none;
+}
+.ck.ck-dropdown .ck-dropdown__panel.ck-dropdown__panel-visible {
+    display: inline-table  !important;
+}
+
+.ck.ck-editor__main
+{
+    overflow: auto  !important;
+      background: #1c353f !important;
+}
+.ck-editor__editable
+{
+    overflow: visible  !important;
+    height: unset !important;
+}
+textarea
+{
+  cursor: auto !important;
+}
+
+</style>
+
+<div class="editor" style="height:100%; width:100%"></div>`;
 
 
 
@@ -89,6 +318,12 @@ class CEditor extends CWindow {
   initialize() {
     this.mControler = setInterval(this.mControlerThreadF.bind(this), this.mControllerThreadInterval);
     //CVMContext.getInstance().addUserLogonListener(this.userLoggedInCallback.bind(this));
+
+    // Check if launched via GLink
+    if (this.wasLaunchedViaGLink) {
+      console.log('[Editor] Launched via GLink, processing...');
+      this.processGLink(this.getGLinkData);
+    }
   }
 
   static getDefaultCategory() {
@@ -186,18 +421,26 @@ class CEditor extends CWindow {
   }
   stopResize(handle) {
     super.stopResize(handle);
-    $(this.mDiv).find('#toolbar-container')[0].style.mWidth = this.getWidth;
-    let m = $(this.mDiv).find('#editor');
-    $('<style type="text/css" scoped> .ck-editor__editable_inline {min-height:' + (parseInt(this.getHeight, 10) - 80) + 'px' + '; max-height:' + (parseInt(this.getHeight, 10) - 80) + 'px' + '; !important;}</style>').insertBefore(m);
-    $(this.mDiv).find('#editorContainer')[0].style.height = ((this.getHeight - 60) + 'px');
+  //  $(this.mDiv).find('#toolbar-container')[0].style.mWidth = this.getWidth;
+    let m = $(this.getBody).find('.editor');
+
+    /*
+    .ck.ck-dropdown .ck-dropdown__panel.ck-dropdown__panel_nw, .ck.ck-dropdown .ck-dropdown__panel.ck-dropdown__panel_sw
+    {
+      max-width: 500px;
+    }
+    */
+    $('<style type="text/css" scoped> .ck.ck-dropdown .ck-dropdown__panel.ck-dropdown__panel_nw, .ck.ck-dropdown .ck-dropdown__panel.ck-dropdown__panel_sw {max-width:' + (parseInt(this.getHeight, 10) - 80) + 'px' + '; max-height:' + (parseInt(this.getHeight, 10) - 80) + 'px' + '; !important;}</style>').insertBefore(m);
+  //  $(this.mDiv).find('#editorContainer')[0].style.height = ((this.getHeight - 60) + 'px');
   }
 
   finishResize(isFallbackEvent) { //Overloaded window-resize Event
     super.finishResize(isFallbackEvent);
-    $(this.mDiv).find('#toolbar-container')[0].style.mWidth = this.getWidth;
-    let m = $(this.mDiv).find('#editor');
-    $('<style type="text/css" scoped> .ck-editor__editable_inline {min-height:' + (parseInt(this.getHeight, 10) - 80) + 'px' + '; max-height:' + (parseInt(this.getHeight, 10) - 80) + 'px' + '; !important;}</style>').insertBefore(m);
-    $(this.mDiv).find('#editorContainer')[0].style.height = ((this.getHeight - 60) + 'px');
+  //  $(this.mDiv).find('#toolbar-container')[0].style.mWidth = this.getWidth;
+    let m = $(this.getBody).find('.editor');
+        $('<style type="text/css" scoped> .ck.ck-dropdown .ck-dropdown__panel.ck-dropdown__panel_nw, .ck.ck-dropdown .ck-dropdown__panel.ck-dropdown__panel_sw {max-width:' + (parseInt(this.getHeight, 10) - 80) + 'px' + '; max-height:' + (parseInt(this.getHeight, 10) - 80) + 'px' + '; !important;}</style>').insertBefore(m);
+    //$('<style type="text/css" scoped> .ck-editor__editable_inline {min-height:' + (parseInt(this.getHeight, 10) - 80) + 'px' + '; max-height:' + (parseInt(this.getHeight, 10) - 80) + 'px' + '; !important;}</style>').insertBefore(m);
+  //  $(this.mDiv).find('#editorContainer')[0].style.height = ((this.getHeight - 60) + 'px');
   }
 
   initCustomSysSettings() {
@@ -220,7 +463,7 @@ class CEditor extends CWindow {
     //Overloaded Window-Opening Event
     this.mContentReady = false;
     this.initialize();
-    let contentContainer = $(this.mDiv).find("#editor")[0];
+    let contentContainer = $(this.getBody).find(".editor")[0];
 
     let extData = this.getExtData;
     let extDataType = this.getExtDataType;
@@ -244,7 +487,8 @@ class CEditor extends CWindow {
 
       }
     }
-    window.createdEditor = this;
+
+  /*  window.createdEditor = this;
     DecoupledEditor
       .create(contentContainer)
       .then(editor => {
@@ -256,9 +500,48 @@ class CEditor extends CWindow {
       .catch(error => {
         console.error(error);
       });
+      */
+
+
+      //initialized the instance specific watchdog service
+      console.log('Initializing watchdog service for Editor..');
+      this.mWatchdog = new CKSource.EditorWatchdog();
+      window.createdEditor = this;
+      this.mWatchdog.setCreator( ( element, config) => {
+        return CKSource.Editor
+          .create( element, config )
+          .then( editor => {
+            const body = editor.ui.view.body._bodyCollectionContainer;
+           body.remove();
+          //  config.inst.mDiv.appendChild(body);
+            //config.inst.mEditor = editor;
+            window.createdEditor.getBody.prepend(body);
+            window.createdEditor.mEditor = editor;
+            editor.setData(extStringData);
+            return editor;
+          } )
+      } );
+
+      this.mWatchdog.setDestructor( editor => {
+        return editor.destroy();
+      } );
+
+      this.mWatchdog.on( 'error', handleError );
+
+      console.log('Bringing the Editor operational..');
+      this.mWatchdog.create( contentContainer, {
+          licenseKey: '',
+          inst:this
+        } ).catch( handleError );
+
+      function handleError( error ) {
+        console.error( 'Oops, something went wrong initializing the Editor!' );
+
+      }
+
 
     super.open();
-    $(this.mDiv).find('#toolbar-container')[0].style.mWidth = this.getWidth;
+  //  $(this.mDiv).find('#toolbar-container')[0].style.mWidth = this.getWidth;
     setTimeout(this.revalidateWindow.bind(this), 1000);
 
   }
@@ -363,6 +646,157 @@ class CEditor extends CWindow {
       let metaData = this.mMetaParser.parse(dfsMsg.getData1);
     }
   }
+
+  // ============ GLink Support - BEGIN ============
+  // Editor Action IDs:
+  // 1 = Open file for editing
+
+  /**
+   * @brief Process GLink data when launched via deep link
+   * @param {Object} glinkData - Parsed GLink data { view, action, data }
+   * @returns {boolean} True if processed successfully
+   */
+  processGLink(glinkData) {
+    const glinkHandler = CGLinkHandler.getInstance();
+
+    if (!glinkData) {
+      console.warn('[Editor] No GLink data to process');
+      glinkHandler.rejectGLink('No GLink data provided');
+      return false;
+    }
+
+    console.log('[Editor] Processing GLink:', glinkData);
+
+    // Accept the GLink - acknowledge receipt
+    glinkHandler.acceptGLink('Editor processing...');
+
+    const { action, data } = glinkData;
+
+    // Handle specific actions (numeric action IDs)
+    if (action !== undefined && action !== null) {
+      switch (action) {
+        case 1: // Open file for editing
+          if (data?.filePath) {
+            console.log('[Editor] GLink Action 1: Opening file:', data.filePath);
+            this.openFileFromGLink(data.filePath, glinkHandler);
+            return true;
+          }
+          break;
+
+        default:
+          console.warn('[Editor] Unknown GLink action ID:', action);
+          glinkHandler.rejectGLink(`Unknown action ID: ${action}`);
+          return false;
+      }
+    }
+
+    // Fallback: Handle file path from GLink (legacy support)
+    if (data?.filePath) {
+      console.log('[Editor] GLink: Opening file:', data.filePath);
+      this.openFileFromGLink(data.filePath, glinkHandler);
+      return true;
+    }
+
+    console.log('[Editor] GLink: No filePath specified');
+    glinkHandler.rejectGLink('No file path specified');
+    return false;
+  }
+
+  /**
+   * @brief Open a file from GLink with connection retry logic
+   * @param {string} filePath - Path to file to open
+   * @param {CGLinkHandler} [glinkHandler] - Optional GLink handler for confirmation
+   */
+  openFileFromGLink(filePath, glinkHandler = null) {
+    // Store the file path for later operations
+    this.mFilePath = filePath;
+    const fileName = gTools.parsePath(filePath).fileName || 'Untitled';
+    this.setTitle(fileName + ' - Editor');
+
+    let retryCount = 0;
+    const maxRetries = 20; // 10 seconds max
+
+    // Request file from DFS when connected
+    const fetchFile = () => {
+      const ctx = CVMContext.getInstance();
+      if (ctx.getConnectionState === eConnectionState.connected) {
+        console.log('[Editor] Fetching file from DFS:', filePath);
+        this.addNetworkRequestID(ctx.getFileSystem.doGetFile(filePath, false, this.getThreadID).getReqID);
+        // Confirm GLink processing after file request initiated
+        if (glinkHandler) {
+          glinkHandler.confirmGLinkProcessed('Editor: File loading...');
+        }
+      } else {
+        retryCount++;
+        if (retryCount < maxRetries) {
+          // Retry after a short delay if not connected
+          setTimeout(fetchFile, 500);
+        } else {
+          // Timeout - reject GLink
+          if (glinkHandler) {
+            glinkHandler.rejectGLink('Connection timeout');
+          }
+        }
+      }
+    };
+
+    setTimeout(fetchFile, 100);
+  }
+
+  // --- Editor GLink Action IDs ---
+  // 1 = Open file for editing
+
+  /**
+   * @brief Create a GLink for a specific file path
+   * @param {string} filePath - Path to file
+   * @param {number} [action=1] - Action ID (default: 1 = Open file)
+   * @returns {string} GLink URL
+   * @static
+   */
+  static createGLink(filePath, action = 1) {
+    return CGLink.create(
+      CEditor.getPackageID(),
+      null,     // view
+      action,   // action: 1 = Open file
+      { filePath: filePath }
+    );
+  }
+
+  /**
+   * @brief Create a GLink for the current file
+   * @returns {string|null} GLink URL for current file, or null if no file
+   */
+  createCurrentFileGLink() {
+    if (!this.mFilePath) {
+      return null;
+    }
+    return CEditor.createGLink(this.mFilePath);
+  }
+
+  /**
+   * @brief Copy current file GLink to clipboard
+   * @returns {Promise<boolean>} True if successful
+   */
+  async copyCurrentFileGLinkToClipboard() {
+    const glink = this.createCurrentFileGLink();
+
+    if (!glink) {
+      this.showMessageBox('No File', 'Save the file first to create a shareable link.');
+      return false;
+    }
+
+    const success = await CGLink.copyToClipboard(glink);
+
+    if (success) {
+      this.showMessageBox('GLink Copied! 📋', 'File link copied to clipboard.\nShare it to let others open this file directly.');
+    } else {
+      this.showMessageBox('Copy Failed', 'Unable to copy GLink to clipboard.');
+    }
+
+    return success;
+  }
+
+  // ============ GLink Support - END ============
 }
 
 export default CEditor;
