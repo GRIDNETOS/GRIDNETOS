@@ -68,7 +68,7 @@ class CTerminal extends CWindow {
     this.SSH_ARROW_RIGHT = 67;
 
     var msec = 1000;
-
+      CTools.getInstance().logEvent("⋮⋮⋮ Terminal UI dApp launching..", eLogEntryCategory.dApp, 1, eLogEntryType.notification, this);
   }
 
   static getPackageID() {
@@ -99,7 +99,7 @@ class CTerminal extends CWindow {
   }
 
   closeWindow() {
-    clearInterval(this.mUIThread);
+    CVMContext.getInstance().stopJSThread(this.mUIThread);
     super.closeWindow();
   }
 
@@ -112,24 +112,24 @@ class CTerminal extends CWindow {
 
       // Make the terminal's size and geometry fit the size of #terminal-container
       if (!this.mThreadActive) {
-        this.mTerminal.write('Initializing Thread ['+this.mTools.arrayBufferToString(this.getThreadID) + '] and the Decentralized Terminal Interface (DTI).. \n\r');
+        this.mTerminal.write('Initializing Thread [' + this.mTools.arrayBufferToString(this.getThreadID) + '] and the Decentralized Terminal Interface (DTI).. \n\r');
         CVMContext.getInstance().initDTI(this.getProcessID, this.getThreadID); //instantiates a Terminal-instance specific DTi on remote full-node
         //app-id ==0 equals to a nUI-Global specific VM
       } else
         this.mTerminal.write('Attached to an already existing Thread. \n\r');
 
       this.mInitedTerminalView = true;
-      this.mUIThread = setInterval(function() {
-        this.refitTerminal();
-      }.bind(this), 1000);
+
+      this.mUIThread = CVMContext.getInstance().createJSThread(this.refitTerminal.bind(this), this.getProcessID, 3000);
+
     }
+
     if (this.mInitedTerminalView) {
       setTimeout(this.refitTerminal.bind(this), 300);
-
     }
   }
-
   takeUserToHomeDir() {
+      CTools.getInstance().logEvent("An attempt to take user to home-directory..", eLogEntryCategory.dApp, 1, eLogEntryType.notification, this);
     let context = CVMContext.getInstance();
     if (context.isLoggedIn) { //Teleport user to his home-directory - BEGIN
       //hide output
@@ -179,7 +179,7 @@ class CTerminal extends CWindow {
         this.mThreadActive = true;
         CVMContext.getInstance().sendTerminalDimensions(this.mTerminal.rows, this.mTerminal.cols, this.getProcessID);
         this.mTerminal.write('\x07');
-        this.mTerminal.write('\n\r [Terminal]: Decentralized Thread ['+ this.mTools.arrayBufferToString(event.threadID)+ '] is now Ready! \n\r');
+        this.mTerminal.write('\n\r [Terminal]: Decentralized Thread [' + this.mTools.arrayBufferToString(event.threadID) + '] is now Ready! \n\r');
 
         if (event.vmFlags.getCmdExecutorAvailable) {
           //attempt to execute the instruction only after the Commands' Executor was reported to be available.
@@ -201,6 +201,7 @@ class CTerminal extends CWindow {
   }
 
   refitTerminal() {
+    //  CTools.getInstance().logEvent("Refitting terminal..", eLogEntryCategory.dApp, 1, eLogEntryType.notification, this);
     if (this.lastWidthRefitAt == this.getWidth &&
       this.lastHeightRefitAt == this.getHeight)
       return;
@@ -250,8 +251,8 @@ class CTerminal extends CWindow {
   }
 
   pasteText() {
-    if (this.mLastPastedTimestamp > 0 && ((gTools.getTime() - this.mLastPastedTimestamp) <= 1))
-    {
+      CTools.getInstance().logEvent("Handling pasted text..", eLogEntryCategory.dApp, 1, eLogEntryType.notification, this);
+    if (this.mLastPastedTimestamp > 0 && ((gTools.getTime() - this.mLastPastedTimestamp) <= 1)) {
       return;
     }
     this.mLastPastedTimestamp = gTools.getTime();
@@ -323,7 +324,7 @@ class CTerminal extends CWindow {
     //modify content here
     this.mTerminal = new Terminal({
       fontSize: 14,
-      fontFamily: 'Consolas',
+      fontFamily: 'Consolas, monospace',
       cursorBlink: true,
       bellStyle: 'sound',
       bellSound: `data:audio/mpeg;base64,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`,
