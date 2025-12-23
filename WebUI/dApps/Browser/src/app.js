@@ -1,7 +1,6 @@
 'use strict';
 
-import
-{
+import {
   CDNS
 } from '/lib/DNS.js'
 import {
@@ -56,18 +55,31 @@ class CBrowser extends CWindow {
   static getDefaultCategory() {
     return 'explore';
   }
+
+  get getIsActivelyMovingCursor() {
+    return this.mActivelyMovingCursor;
+  }
+
+  set setIsActivelyMovingCursor(isIt) {
+    this.mActivelyMovingCursor = isIt;
+  }
   constructor(positionX, positionY, width, height) {
+    let ctx = CVMContext.getInstance();
+    if (CTools.getInstance().isNull(ctx.getCurrentNodeURI) || ctx.getCurrentNodeURI.length == 0)
+      return;
 
-    if(CTools.getInstance().isNull(CVMContext.getInstance().getCurrentNodeURI) || CVMContext.getInstance().getCurrentNodeURI.length==0)
-    return;
-    let proxyURI = new URL(CVMContext.getInstance().getCurrentNodeURI);
-
-    if(CTools.getInstance().isIPaddress(proxyURI.hostname))
-    {
-      proxyURI = new URL(CVMContext.getInstance().getDNS.ipAddressToDomain(proxyURI.hostname));
+    let proxyURI = null;
+    try {
+      proxyURI = new URL(ctx.getCurrentNodeURI);
+    } catch (err) {
+      proxyURI = new URL(window.location.origin);
     }
+    let proxy = ctx.getRandomTossedProxyUri();
+    let url = new URL(proxy);
+    url.port = 444;
 
-    let URIStr = 'https://'+proxyURI.hostname+":444/";
+
+    let URIStr = url.toString();
     browserBody = browserBody.replace('[PROXY_URI]', URIStr);
     super(positionX, positionY, width, height, browserBody, "Browser", CBrowser.getIcon(), true); //use Shadow-DOM by default
     this.mElements = {
@@ -76,7 +88,9 @@ class CBrowser extends CWindow {
       right: $(this.getBody).find('.selector-right')[0],
       bottom: $(this.getBody).find('.selector-bottom')[0]
     };
-    this.mVMContext = CVMContext.getInstance();
+
+    this.mMousePositions = [];
+    this.mVMContext = ctx;
     this.mLastWobbledFor = null;
     this.mMouseTargetWidth = 0;
     this.mInAppMouseX = 0;
@@ -84,11 +98,10 @@ class CBrowser extends CWindow {
     this.mKnowThatMouseOut = false;
     this.mLasersHidden = false;
     this.mFrame = $(this.getBody).find('.viewerFrame')[0];
+    this.mLikeItBtn = $(this.getBody).find('.likeIt')[0];
     this.mFrame.setAttribute('winID', this.getWinID);
     this.mDNS = this.mVMContext.getDNS;
-
-
-
+    this.mFavourites = [];
 
     this.mFrame.setAttribute('proxyURI', URIStr);
 
@@ -180,17 +193,19 @@ class CBrowser extends CWindow {
     this.mLastHeightRearangedAt = 0;
     this.mLastWidthRearangedAt = 0;
     this.mErrorMsg = "";
+    this.mLinkBoxHoverStart = 0;
+    this.mLinkBoxHoverEnd = 0;
     this.mMetaParser = new CVMMetaParser();
     //register for network events
-    CVMContext.getInstance().addVMMetaDataListener(this.newVMMetaDataCallback.bind(this), this.mID);
-    CVMContext.getInstance().addNewDFSMsgListener(this.newDFSMsgCallback.bind(this), this.mID);
-    CVMContext.getInstance().addNewGridScriptResultListener(this.newGridScriptResultCallback.bind(this), this.mID);
+    ctx.addVMMetaDataListener(this.newVMMetaDataCallback.bind(this), this.mID);
+    ctx.addNewDFSMsgListener(this.newDFSMsgCallback.bind(this), this.mID);
+    ctx.addNewGridScriptResultListener(this.newGridScriptResultCallback.bind(this), this.mID);
     this.loadLocalData();
     this.mEditAfterHolding = 1; //activate editing after 3 seconds
     this.mPersistentTargetCadidate = null;
     this.mPersistentTarget = null;
     this.mHoldingItemSince = 0;
-    this.controllerThreadInterval = 1000;
+    this.mControllerThreadInterval = 1000;
     this.mControlerExecuting = false;
     this.mControler = 0;
     this.mDarkModeEnabled = true;
@@ -200,6 +215,12 @@ class CBrowser extends CWindow {
     this.mBody = this.getBody;
     this.mToggleButton = $(this.getBody).find('.themeToggle')[0];
     this.mLinkBox = $(this.getBody).find('.linkBox')[0];
+    this.mLinkBoxTouchDetector = $(this.getBody).find('.linkBoxTouchDetector')[0];
+    this.mLinkBoxTouchDetector.addEventListener("mouseenter", this.mouseEnteredLinkBox.bind(this));
+    this.mLinkBoxTouchDetector.addEventListener("mouseleave", this.mouseLeftLinkBox.bind(this));
+    this.mMouseEnteredLinkBoxTimestamp = 0;
+    this.mMouseLeftLinkBoxTimestamp = 0;
+    this.mLinkBoxAutoHiddenTimestamp = 0;
     this.mFrameButton = null;
     this.mSidebarButton = null;
     this.mGoForthBtn = $(this.getBody).find('.goForthBtn')[0];
@@ -219,7 +240,7 @@ class CBrowser extends CWindow {
 
 
 
-    this.mHomepage = 'https://wikileaks.org/';
+    this.mHomepage = 'https://google.com/';
     this.addToHistory(this.mHomepage, false);
 
     this.mURLField = $(this.getBody).find('#locationField')[0];
@@ -227,18 +248,37 @@ class CBrowser extends CWindow {
 
     this.addMouseMoveListener(this.mouseMovedInApp.bind(this));
     this.addMouseClickListener(this.mouseClickedInApp.bind(this));
+    this.updateNavButtons();
     //Init app items - END
   }
+  mouseEnteredLinkBox() {
+    this.mLinkBoxAutoHiddenTimestamp = 0;
+    this.mMouseEnteredLinkBoxTimestamp = this.mTools.getTime(true);
+    if ((this.mLinkBoxAutoHiddenTimestamp && this.mMouseLeftLinkBoxTimestamp) &&
+      ((this.mLinkBoxAutoHiddenTimestamp - this.mMouseLeftLinkBoxTimestamp) < 4000))
+      return; //the side-bar just got auto-hiddent; do not open it anew right now.
+    //rationale: allow for the on-page elements to be tapped.
+    this.mLinkBox.style.display = 'block';
+    this.mLinkBox.style.width = '4.5em';
+  }
+  mouseLeftLinkBox() {
+    this.mMouseLeftLinkBoxTimestamp = this.mTools.getTime(true);
+    this.mLinkBox.style.width = '0';
+
+  }
+
+
 
   //Gets notified about in-app mouse movements.
   //Notice it's seperate from in-Wizardous-iFrame notifications
   mouseMovedInApp(event) {
+    this.mInAppMouseX = event.x;
+    this.mInAppMouseY = event.y;
 
     if (this.hasParentClass(event.target, "picker_wrapper")) {
       return; //do not trigger when moving over the colur picker
     }
-    this.mInAppMouseX = event.x;
-    this.mInAppMouseY = event.y;
+
     let objRect = event.target.getBoundingClientRect();
     this.mMouseTargetWidth = objRect.right - objRect.left;
   }
@@ -515,7 +555,7 @@ class CBrowser extends CWindow {
 
   goHome() {
     this.setWandEnabled = false;
-    this.mURLField.value = 'https://wikileaks.org/';
+    this.mURLField.value = this.mHomepage;
     this.frameLoadNewSite();
   }
 
@@ -579,6 +619,8 @@ class CBrowser extends CWindow {
     } else {
       this.setGoForthEnabled = false;
     }
+
+    this.updateLikeItBtnOpacity();
   }
   swapURL(url, frameActive) {
     /* (string, boolean) Change URL depending on if the frame is open or not */
@@ -775,7 +817,7 @@ class CBrowser extends CWindow {
     //convert arrays to dictionaries
     //let domainsDict = {};
     settings.domainSettings.domains = this.objectToMap(settings.domainSettings.domains);
-
+    //settings.likedDomains = this.objectToMap(settings.likedDomains);
     //for (let i = 0; i < settings.domainSettings.domains.length; i++) {
 
     let entries = Object.entries(settings.domainSettings.domains);
@@ -790,6 +832,11 @@ class CBrowser extends CWindow {
     //now take use of the app-specific settings object from above
     // ex:  this.mGrid.load(settings);
 
+    if (settings.likedDomains) {
+      this.mFavourites = settings.likedDomains;
+      this.redrawFavourites();
+    }
+    this.updateLikeItBtnOpacity();
     //Apply Settings - END
     return true;
 
@@ -932,7 +979,8 @@ class CBrowser extends CWindow {
   //internal processing queue
   {
     //this.loadSettings();
-    this.mControler = setInterval(this.mControlerThreadF.bind(this), this.controllerThreadInterval);
+
+    this.mControler = CVMContext.getInstance().createJSThread(this.controlerThreadF.bind(this), this.getProcessID, this.mControllerThreadInterval);
     this.disableVerticalScroll();
     this.disableHorizontalScroll();
 
@@ -1037,15 +1085,150 @@ class CBrowser extends CWindow {
     }
   }
 
-  mControlerThreadF() {
-    if (this.mControlerExecuting)
-      return false;
+  get getIsMouseWithinLinkBox() {
+    return (this.mMouseEnteredLinkBoxTimestamp > this.mMouseLeftLinkBoxTimestamp);
+  }
 
-    this.mControlerExecuting = true; //mutex protection
+  updateLikeItBtnOpacity() {
+    let currentSite = this.getDomain;
+    let currentPos = this.mFavourites.indexOf(currentSite);
+
+    if (currentPos > -1) {
+      this.mLikeItBtn.style.opacity = '1';
+    } else {
+      this.mLikeItBtn.style.opacity = '0.5';
+    }
+  }
+
+  toggleFavourite(redraw = true) {
+    let currentSite = this.getDomain;
+
+    if (!currentSite)
+      return;
+    currentSite = currentSite.replace("http://", "").replace("https://", "");
+
+    let currentPos = this.mFavourites.indexOf(currentSite);
+
+
+    if (currentPos > -1) {
+      //remove it
+      this.mLikeItBtn.style.opacity = '0.5';
+      this.mFavourites.splice(currentPos, 1);
+    } else {
+      //add it
+      this.mLikeItBtn.style.opacity = '1';
+      this.mFavourites.push(currentSite);
+    }
+
+    if (redraw) {
+      this.redrawFavourites();
+    }
+
+    //settings support - Begin
+    let settings = this.getSettings.getData;
+    settings.likedDomains = this.mFavourites;
+    this.setSettings(settings);
+    this.saveSettings();
+    //settings support - End
+  }
+
+  //Redraws fevourite websites, located within the retractable sidebar.
+  redrawFavourites() {
+    //Local Variables - BEGIN
+    let proxyURI = new URL(CVMContext.getInstance().getCurrentNodeURI);
+    let elem = null;
+    if (this.mTools.isIPaddress(proxyURI.hostname)) {
+       let dnsResult = new URL(CVMContext.getInstance().getDNS.ipAddressToDomain(proxyURI.hostname));
+    //  if (dnsResult.success) {
+        proxyURI = new URL(convertedResult.result);
+    //  }
+    }
+
+    let iconURL = '';
+    let iconExists = false;
+    //Local Variables - END
+
+    //Operational Logic - BEGIN
+
+    let children = this.mLinkBox.children;
+    for (let i = 2; i < children.length; i++) //leave the upper-most two elements as they are.
+      this.mLinkBox.removeChild(children[i]);
+
+    let proxyPrefix = 'https://' + proxyURI.hostname + ":444/https://";
+
+    for (let i = 0; i < this.mFavourites.length; i++) {
+
+      iconURL = proxyPrefix + this.mFavourites[i] + "/favicon.ico";
+
+      if (this.mTools.imgExists(iconURL)) {
+        elem = document.createElement("img");
+        elem.src = iconURL; //fetch favicon of the particular website
+      } else {
+        elem = document.createElement("div");
+        elem.innerHTML = this.mFavourites[i].toUpperCase()[0];
+      }
+
+      //common properties
+
+      elem.classList.add("linkIcon");
+      elem.alt = this.mFavourites[i];
+      elem.onclick = this.decideBehaviourOfAddBar.bind(this, this.mFavourites[i]);
+
+      this.mLinkBox.appendChild(elem);
+    }
+    //Operational Logic - END
+
+    //this should reseult with the container being populated with entries reasembling the one below:
+    //  <img src="/dApps/Browser/images/wikipedia.png" class="linkIcon" alt="Wikipedia"
+    //  onclick="let window = gWindowManager.getWindowByID($(this).closest(&#39;.idContainer&#39;).find(&#39;#windowIDField&#39;).first().val()); window.decideBehaviourOfAddBar('https://www.wikipedia.org')"></img>
+  }
+
+  hideLinkBox() {
+    this.mLinkBox.style.width = '0';
+    this.mLinkBox.style.display = 'none';
+    setTimeout(function() {
+      this.mLinkBox.style.display = 'block'
+      this.mLinkBoxTouchDetector.classList.remove('mouseImmune');
+    }.bind(this), 2500);
+  }
+  //main client-side thread - BEGIN
+  controlerThreadF() {
 
     //operational logic - BEGIN
     let now = CTools.getInstance().getTime(true);
 
+    //Analyze Mouse Movement - BEGIN
+    while (this.mMousePositions.length > 4) {
+      this.mMousePositions.shift();
+    }
+    this.mMousePositions.push({
+      x: this.mInAppMouseX,
+      y: this.mInAppMouseY
+    });
+
+    let totalDistanceTraveled = 0;
+    if (this.mMousePositions.length > 1) {
+      for (let i = 0; i < this.mMousePositions.length - 1; i++) {
+        totalDistanceTraveled += this.mTools.get2DDistance(this.mMousePositions[i], this.mMousePositions[i + 1]);
+      }
+    }
+    if (totalDistanceTraveled > 50) {
+      this.setIsActivelyMovingCursor = true;
+    } else {
+      this.setIsActivelyMovingCursor = false;
+    }
+
+    //Analyze Mouse Movement - END
+    //Auto-Hide link-box - BEGIN
+    if (this.getIsActivelyMovingCursor == false && this.getIsMouseWithinLinkBox &&
+      ((now - this.mMouseEnteredLinkBoxTimestamp) > 4000)) { //the link-box would back out after a timout, so that elements in the background could be interacted with.
+      this.mLinkBoxAutoHiddenTimestamp = now;
+      this.mMouseEnteredLinkBoxTimestamp = 0;
+      this.mMouseLeftLinkBoxTimestamp = now;
+      this.mLinkBoxTouchDetector.classList.add('mouseImmune');
+      this.mTools.animateByElement(this.mLinkBox, "backOutUp", this.hideLinkBox.bind(this));
+    }
+    //Auto-Hide link-box - END
     if (this.getIsMouseWithin) {
       this.mKnowThatMouseOut = false;
     }
@@ -1069,7 +1252,7 @@ class CBrowser extends CWindow {
                 this.mPicker.hide();
                 this.pickerClosed();
               }
-              CTools.getInstance().animateByElement(this.mPersistentTargetCadidate, "pulse", this.openPickerFor.bind(this, this.mPersistentTargetCadidate));
+              this.mTools.animateByElement(this.mPersistentTargetCadidate, "pulse", this.openPickerFor.bind(this, this.mPersistentTargetCadidate));
             } else {
               this.openPickerFor.bind(this, this.mPersistentTargetCadidate)();
             }
@@ -1098,10 +1281,8 @@ class CBrowser extends CWindow {
 
     //operational logic - END
 
-    this.mControlerExecuting = false;
-
   }
-
+  //main client-side thread - END
   openPickerFor(target) {
 
     if (!target || this.hasParentClass(target, "picker_wrapper"))
@@ -1195,16 +1376,17 @@ class CBrowser extends CWindow {
     this.mContentReady = false;
     super.open();
     this.initialize();
-  //  let promiseResult = await this.askIntA('⋮⋮⋮ Browser🌎 ', 'Provide home-page URL? (default: Wikileaks) ', true);
-  //  console.log("Response: " + promiseResult.response);
+    //  let promiseResult = await this.askIntA('⋮⋮⋮ Browser🌎 ', 'Provide home-page URL? (default: Wikileaks) ', true);
+    //  console.log("Response: " + promiseResult.response);
     //modify content here
 
   }
 
   //remember to shut down any additional threads over here.
   closeWindow() {
-    if (this.mControler > 0)
-      clearInterval(this.mControler); //shut-down the thread if active
+    if (this.mControler > 0) {
+      CVMContext.getInstance().stopJSThread(this.mControler); //shut-down the thread if active
+    }
     super.closeWindow();
   }
 
