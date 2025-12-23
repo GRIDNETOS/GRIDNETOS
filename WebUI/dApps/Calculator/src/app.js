@@ -228,12 +228,12 @@ getAttribute(at)
   initialize() //called only when app needs a thread/processing queue of its own, one seperate from the Window's
   //internal processing queue
   {
-    this.mControler = setInterval(this.mControlerThreadF.bind(this), this.controllerThreadInterval);
+    this.mControler = setInterval(this.controlerThreadF.bind(this), this.controllerThreadInterval);
     this.disableVerticalScroll();
     this.disableHorizontalScroll();
   }
 
-  mControlerThreadF() {
+  controlerThreadF() {
     if (this.mControlerExecuting)
       return false;
 
