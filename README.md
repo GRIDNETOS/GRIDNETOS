@@ -162,6 +162,6 @@ All in all, once your UI dApp gets commited, it would be available right away fr
 
 <p align="left">GRIDNET OS consumed millions of dollars in development. We want to protect our interests and interests of our investors to the best extent possible. In the decentralized realm there are unfortunately many actors ready to scrape available code and claim it as their own. Keeping these core components proprietary helps protect the Team and investors from free-riders and copycats while still allowing the community to build upon and contribute to the open-sourced portions of the system.</p>
 
-<p align="left">As our ecosystem matures and investment rounds conclude, we plan to progressively open-source additional components.</p>
+<p align="left">As our ecosystem matures, we plan to progressively open-source additional components.</p>
 
 ###
