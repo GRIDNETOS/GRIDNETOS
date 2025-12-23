@@ -1,3 +1,4 @@
+'use strict';
 import {
   CVMMetaSection,
   CVMMetaEntry,
@@ -15,6 +16,20 @@ import {
   CSwarmsManager
 } from '/lib/SwarmManager.js'
 
+import {
+  CSwarmMsg
+} from '/lib/swarmmsg.js'
+
+import {
+  CSwarmAuthData
+} from '/lib/swarmconnection.js'
+
+
+
+
+import {
+  CDataConcatenator
+} from '/lib/tools.js'
 
 var meetingBody = `  <link rel="stylesheet" href="/css/main.css">
 <link rel="stylesheet" href="/dApps/Meeting/style.css">
@@ -32,7 +47,7 @@ var meetingBody = `  <link rel="stylesheet" href="/css/main.css">
           <ul>
             <li style="margin-top:-1em ; "><a id='peersCount' href="#"></a> </li>
 
-            <li onclick="alert('Option 1 Clicked')"><a href="#">
+            <li onclick=""><a href="#">
                 <i class="fal fa-pause"></i> Pause</a></li>
             <li onclick="let window = gWindowManager.getWindowByID($($(this).closest('.idContainer')).find('#windowIDField').first().val()); window.quitMeeting();"><a href="#">
                 <i class="far fa-sign-out-alt"></i> Quit</a></li>
@@ -79,7 +94,7 @@ var meetingBody = `  <link rel="stylesheet" href="/css/main.css">
 
       <div id="videoFeedsContainer">
 
-
+<div style="display: block; padding-top: 0.2em; color: #8feadf;text-align: center; background-color: #2973b1;" class="fal fa-users"> </div>
 
       </div>
 
@@ -124,12 +139,12 @@ var meetingBody = `  <link rel="stylesheet" href="/css/main.css">
 
     </div>
           <i onclick="let window = gWindowManager.getWindowByID($($(this).closest('.idContainer')).find('#windowIDField').first().val()); window.toggleEmojiPicker()" class="fal fa-smile fa-lg emojiPickerButton" ></i>
-<form onkeydown=" let window = gWindowManager.getWindowByID($($(this).closest('.idContainer')).find('#windowIDField').first().val()); window.notifyTyping();if(event.key == 'Enter') {if(!window.getCheckSAOk(1)){ window.animateCSS(this.id,'shakeX'); return false}; window.newGlobalMsgFromMe(); return false;} else {return true;} ">
+<form onkeydown=" let window = gWindowManager.getWindowByID($($(this).closest('.idContainer')).find('#windowIDField').first().val()); window.notifyTyping();if(event.key == 'Enter') {if(!window.getCheckSAOk(1)){ window.animateCSS(this.id,'shakeX'); return false}; window.executeGlobalTxt(); return false;} else {return true;} ">
             <input id='chatInputTxt' autocomplete="off" type="text" ></div>
 </form>
           <div id='containerBtn'>
 
-            <input id='chatSendBtn' onclick="let window = gWindowManager.getWindowByID($($(this).closest('.idContainer')).find('#windowIDField').first().val()); if(!window.getCheckSAOk(1)){ window.animateCSS(this.id,'shakeX'); return}; window.newGlobalMsgFromMe();" type="button" value="Send"></div>
+            <input id='chatSendBtn' onclick="let window = gWindowManager.getWindowByID($($(this).closest('.idContainer')).find('#windowIDField').first().val()); if(!window.getCheckSAOk(1)){ window.animateCSS(this.id,'shakeX'); return}; window.executeGlobalTxt();" type="button" value="Send"></div>
 
         </div>
       </div>
@@ -139,28 +154,70 @@ var meetingBody = `  <link rel="stylesheet" href="/css/main.css">
 `;
 
 let typingStateTemplate = `<div id="[peerID]" class = 'typingState animate__animated'><span class="who">[peerID]</span><img src="/dApps/Meeting/img/txtwait.gif"  class="typingSticker"></div>`
-let msgTemplate = `<li class="[originFlagField]"><div class="entete"><span class="[statusField]"></span><h2>[sourceField]</h2><h3>[timeField]</h3></div><div class="message"><div class="triangle"></div>[msgTxtField]</div></li>`;
 let streamTemplate = `<div id='[FIELD_PEER_ID]' class = 'videoFeedContainer videoFeedResizable' onclick="let window = gWindowManager.getWindowByID($($(this).closest('.idContainer')).find('#windowIDField').first().val()); window.toggleFullScreenVideo(this.id);" onmouseout=""> </div>`;
 let streamTitleTemplate = `<div class ='videoFeedTitle'><div class='feedTitleTxt'>[fieldTitle]</div></div>`;
-
+let streamStatusTemplate = `<div id='[FIELD_PEER_ID]_status'style="font-size: small; "></div>`
+let streamStatusMicTemplate = `<i id='[FIELD_PEER_ID]_status_mic' class="muted fal fa-volume-slash"></i>`
+let streamQualityTemplate = `<i id='[FIELD_PEER_ID]_quality' class="qualityIndicatorRed fal fa-signal-slash"></i>`
+let streamStatusAuthTemplate = `<i id='[FIELD_PEER_ID]_status_auth' class="authStateIcon authNone fal fa-globe"></i>`
 const eView = {
   joinMeeting: 0,
   activeMeeting: 1
 }
 
 class CPeer {
-  constructor(id, connection) {
+  constructor(id, connection, app) {
     this.mID = id;
+
     this.mConnection = connection;
     this.mLastTyping = 0;
     this.mLastMsg = 0;
+    this.mCamMuted = true;
+    this.mMicMuted = true;
+    this.mSSActive = true;
+    this.mApp = app;
   }
+
+
+
 
   pingTyping() {
     this.mLastTyping = CTools.getInstance().getTime(true);
   }
   pingLastMsg() {
     this.mLastMsg = CTools.getInstance().getTime(true);
+  }
+
+  get camActive() {
+    return !this.mCamMuted;
+  }
+
+  get micActive() {
+    return !this.mMicMuted;
+  }
+  get screenSharingActive() {
+    return this.mSSActive;
+  }
+
+  set camActive(isIt) {
+    if (this.mCamMuted != !isIt) {
+      this.mCamMuted = !isIt;
+
+      this.mApp.setPeerCamStateInUI(this.mID, this.mCamMuted);
+    }
+  }
+
+  set micActive(isIt) {
+    if (this.mMicMuted != !isIt) {
+
+      this.mMicMuted = !isIt;
+      this.mApp.setPeerMicStateInUI(this.mID, this.mMicMuted);
+    }
+  }
+
+  set screenSharingActive(isIt) {
+    this.mSSActive = isIt;
+    this.mApp.setPeerCamStateInUI(this.mID, !this.mSSActive);
   }
 
 
@@ -178,38 +235,58 @@ class CPeer {
     return this.mConnection;
   }
 
+  sendData(data, onlyIfAuthenticated = true) {
+    if (this.mConnection) {
+      //See the Whiteboard UI dApp for an additinal level of encapsulation (an UI dApp-specific datagram).
+      return this.mConnection.send(data, onlyIfAuthenticated);
+    } else {
+      return false;
+    }
+  }
+
 
 }
 
 class CMeeting extends CWindow {
   constructor(positionX, positionY, width, height) {
-    super(positionX, positionY, width, height, meetingBody, "⋮⋮⋮ Meeting", CMeeting.getIcon(), true);
+    super(positionX, positionY, width + 200, height, meetingBody, "⋮⋮⋮ Meeting", CMeeting.getIcon(), true);
     this.mMetaParser = new CVMMetaParser();
     this.setProtocolID = 257;
+    this.mConnectingToSwarmMutex = false;
+    this.mRecentSwarmConnectionAttempt = 0;
     this.mTools = CTools.getInstance();
     this.mPeers = [];
+    this.mKnownConnectionStatus = null;
     this.mMaxedVideo = null;
     this.mLastHeightRearangedAt = 0;
     this.mLastWidthRearangedAt = 0;
+    this.mLastAuthRequestNotificationTimestamp = 0;
+    this.mLastAuthAcceptedNotificationTimestamp = 0;
+    this.mLastAuthFailureNotificationTimestamp = 0;
     this.mErrorMsg = "";
     this.mPrivKey = null;
+    this.mSwitchingData = false;
     this.mEmojiPickerVisible = false;
     this.mLastAnonymousID = 0;
+    let ctx = CVMContext.getInstance();
     //register for network events
-    CVMContext.getInstance().addVMMetaDataListener(this.newVMMetaDataCallback.bind(this), this.mID);
-    CVMContext.getInstance().addNewDFSMsgListener(this.newDFSMsgCallback.bind(this), this.mID);
-    CVMContext.getInstance().addNewGridScriptResultListener(this.newGridScriptResultCallback.bind(this), this.mID);
+    ctx.addConnectionStatusChangedListener(this.connectionStatusChangedCallback.bind(this), this.getID);
+    ctx.addSessionKeyAvailableListener(this.sessionKeyAvailabilityChangedCallback.bind(this), this.getID);
+    ctx.getSwarmsManager.addLocalStreamEventListener(this.localStreamEventHandler.bind(this), this.getID);
+    ctx.addVMMetaDataListener(this.newVMMetaDataCallback.bind(this), this.getID);
+    ctx.addNewDFSMsgListener(this.newDFSMsgCallback.bind(this), this.getID);
+    ctx.addNewGridScriptResultListener(this.newGridScriptResultCallback.bind(this), this.getID);
     this.loadLocalData();
-    this.controllerThreadInterval = 300;
-    this.mControler = 0;
-    this.mControlerExecuting = false;
-    this.mOutBoundStream = null;
+    this.mControllerThreadInterval = 300;
+    this.mController = 0;
+    this.mControllerExecuting = false;
     //app specific logic - Begin
     this.mLastVidResize = this.mTools.getTime(true);
     this.mSwarm = null; //single swarm per Meeting
     this.mSwarmManager = CSwarmsManager.getInstance(this.mVMContext);
     this.mMicMuted = true;
     this.mCamMuted = true;
+    this.mCamMutedInLocalSystem = false;
     this.mSSMuted = true;
     this.mScreenSharingEnabled = false;
     this.mChatMaxed = false;
@@ -240,6 +317,14 @@ class CMeeting extends CWindow {
     this.mPeers.push(peer);
   }
 
+  hideScollOfPeersContainer(doIt = true) {
+    if (doIt) {
+      this.mVideoFeeds.classList.add('hiddenScroll');
+    } else {
+      this.mVideoFeeds.classList.remove('hiddenScroll');
+    }
+  }
+
   whoIsIndicatedAsTyping() {
     let typers = $(this.mTypingStatesContainer).find('.typingState');
     let IDs = [];
@@ -260,6 +345,221 @@ class CMeeting extends CWindow {
     }
 
     return toRet;
+  }
+
+
+  setPeerCamStateInUI(peerID, muted) {
+
+    if (peerID == null || peerID.length == 0) {
+      return;
+    } else {
+      peerID = this.mTools.arrayBufferToString(peerID);
+
+      if (this.isPeerInUI(peerID) == false) {
+
+        let peer = this.findPeerByID(peerID);
+        if (!peer || !peer.getConnection.ingressStream) {
+          CTools.getInstance().logEvent("Can't unmute. Peer " + peerID + " is not in UI yet.", eLogEntryCategory.dApp, 1, eLogEntryType.warning, this);
+          return false;
+        } else {
+          CTools.getInstance().logEvent("Adding  Peer " + peerID + " to UI before unmuting.", eLogEntryCategory.dApp, 1, eLogEntryType.warning, this);
+          this.addStream(peer.getConnection.ingressStream, peer.getID, true);
+        }
+      }
+
+
+      if (muted) {
+        this.hideScollOfPeersContainer(true);
+        this.animateCSS(peerID + "_vid", 'backOutDown', 'animate__', function() {
+          this.hideScollOfPeersContainer(false);
+        }.bind(this), false, true); //IMPORTANT: failsafe is NOT ENABLED.
+      } else {
+        this.hideScollOfPeersContainer(true);
+        this.animateCSS(peerID + "_vid", 'backInUp', 'animate__', function() {
+          this.hideScollOfPeersContainer(false);
+        }.bind(this), false, false, true); //IMPORTANT: failsafe is ENABLED.
+      }
+
+    }
+  }
+
+
+
+  setPeerMicStateInUI(peerID, muted) {
+
+    if (peerID === 'Me') {
+      return;
+    }
+
+
+    if (peerID == null || peerID.length == 0) {
+      return;
+    } else {
+
+      peerID = this.mTools.arrayBufferToString(peerID);
+
+      if (this.isPeerInUI(peerID) == false) {
+
+        let peer = this.findPeerByID(peerID);
+        if (!peer || !peer.getConnection.ingressStream) {
+          CTools.getInstance().logEvent("Can't unmute. Peer " + peerID + " is not in UI yet.", eLogEntryCategory.dApp, 1, eLogEntryType.warning, this);
+          return false;
+        } else {
+          CTools.getInstance().logEvent("Adding  Peer " + peerID + " to UI before unmuting.", eLogEntryCategory.dApp, 1, eLogEntryType.warning, this);
+          this.addStream(peer.getConnection.ingressStream, peer.getID, true);
+        }
+      }
+
+      let controlID = peerID + "_status_mic";
+      let audioControlID = peerID + "_audio";
+      let statusContainer = this.getControl(controlID);
+      let audioControl = this.getControl(audioControlID);
+      if (statusContainer) {
+        if (muted) {
+
+          if (audioControl) { //failover should anything in network layer be delayed
+            audioControl.muted = true;
+          }
+          statusContainer.classList.remove('unmuted', 'fa-volume');
+          statusContainer.classList.add('muted', 'fa-volume-slash');
+          this.hideScollOfPeersContainer(true);
+          this.animateCSS(controlID, 'wobble', 'animate__', function() {
+            this.hideScollOfPeersContainer(false);
+          }.bind(this), false, false);
+        } else {
+          if (audioControl) { //failover should anything in network layer be delayed
+            audioControl.muted = false;
+          }
+          statusContainer.classList.remove('muted', 'fa-volume-slash');
+          statusContainer.classList.add('unmuted', 'fa-volume');
+          this.hideScollOfPeersContainer(true);
+          this.animateCSS(controlID, 'flash', 'animate__', function() {
+            this.hideScollOfPeersContainer(false);
+          }.bind(this), false, false);
+        }
+      }
+    }
+  }
+
+  setPeerConnQualityInUI(peerID, quality) {
+
+    ///  if (peerID === 'Me') {
+    ///  return;
+    //  }
+
+    if (peerID == null || peerID.length == 0) {
+      return;
+    } else {
+      peerID = this.mTools.arrayBufferToString(peerID);
+
+
+
+      if (this.isPeerInUI(peerID) == false) {
+        CTools.getInstance().logEvent("Can't unmute. Peer " + peerID + " is not in UI yet.", eLogEntryCategory.dApp, 1, eLogEntryType.warning, this);
+        return false;
+      }
+
+
+      let controlID = peerID + "_quality";
+      let statusContainer = this.getControl(controlID);
+
+      if (statusContainer) {
+        statusContainer.classList.remove('qualityIndicatorGreen', 'qualityIndicatorYellow', 'qualityIndicatorRed', 'fa-signal-slash', 'fa-signal-1', 'fa-signal-2', 'fa-signal-3', 'fa-signal-4');
+
+        switch (quality) {
+          case eConnQuality.none:
+            statusContainer.classList.add('fa-signal-slash', 'qualityIndicatorRed');
+            break;
+
+          case eConnQuality.low:
+            statusContainer.classList.add('fa-signal-1', 'qualityIndicatorRed');
+            break;
+
+          case eConnQuality.medium:
+            statusContainer.classList.add('fa-signal-2', 'qualityIndicatorYellow');
+            break;
+          case eConnQuality.high:
+            statusContainer.classList.add('fa-signal-3', 'qualityIndicatorGreen');
+          case eConnQuality.max:
+            statusContainer.classList.add('fa-signal-4', 'qualityIndicatorGreen');
+            break;
+          default:
+
+            this.hideScollOfPeersContainer(true);
+            this.animateCSS(controlID, 'wobble', 'animate__', function() {
+              this.hideScollOfPeersContainer(false);
+            }.bind(this), false, false);
+
+        }
+      }
+    }
+  }
+
+  setPeerAuthStateInUI(peerID, authState) {
+
+    if (peerID == null || peerID.length == 0) {
+      return;
+    } else {
+      let peer = this.findPeerByID(peerID);
+      let shouldAudioBeActive = false;
+      let shouldVideoBeActive = false;
+      if (peer) {
+        if (peer.camActive) {
+          shouldVideoBeActive = true;
+        }
+        if (peer.micActive) {
+          shouldAudioBeActive = true;
+        }
+      }
+      peerID = this.mTools.arrayBufferToString(peerID);
+      let controlID = peerID + "_status_auth";
+      let audioControlID = peerID + "_audio";
+      let audioControl = this.getControl(audioControlID);
+      let statusContainer = this.getControl(controlID);
+
+      if (statusContainer) {
+        if (authState == 0) {
+          statusContainer.classList.remove('fa-lock', 'fa-lock-open', 'fa-globe', 'authNone', 'authLocked', 'authUnlocked', 'authKey', 'fa-key');
+          statusContainer.classList.add('fa-globe', 'authNone');
+          this.hideScollOfPeersContainer(true);
+          this.animateCSS(controlID, 'flash', 'animate__', function() {
+            this.hideScollOfPeersContainer(false);
+          }.bind(this), false, false);
+        } else if (authState == 2) {
+          statusContainer.classList.remove('fa-lock', 'fa-lock-open', 'fa-globe', 'authNone', 'authLocked', 'authUnlocked', 'authKey', 'fa-key');
+          statusContainer.classList.add('fa-lock-open', 'authUnlocked');
+
+          if (shouldAudioBeActive) {
+            audioControl.muted = false; //only if supposed to be streaming. (to prevent stub audio beeping - failover).
+          }
+          this.hideScollOfPeersContainer(true);
+          this.animateCSS(controlID, 'wobble', 'animate__', function() {
+            this.hideScollOfPeersContainer(false);
+          }.bind(this), false, false);
+        } else if (authState == 1) {
+
+          audioControl.muted = true; //(to prevent stub audio beeping - failover).
+
+
+          statusContainer.classList.remove('fa-lock', 'fa-lock-open', 'fa-globe', 'authNone', 'authLocked', 'authUnlocked', 'authKey', 'fa-key');
+          statusContainer.classList.add('fa-lock', 'authLocked');
+          this.hideScollOfPeersContainer(true);
+          this.animateCSS(controlID, 'flash', 'animate__', function() {
+            this.hideScollOfPeersContainer(false);
+          }.bind(this), false, false);
+        } else if (authState == 3) { //only for local peer, once AUTH requirement is set.
+          if (shouldAudioBeActive) {
+            audioControl.muted = false; //only if supposed to be streaming. (to prevent stub audio beeping - failover).
+          }
+          statusContainer.classList.remove('fa-lock', 'fa-lock-open', 'fa-globe', 'authNone', 'authLocked', 'authUnlocked', 'authKey', 'fa-key');
+          statusContainer.classList.add('authKey', 'fa-key');
+          this.hideScollOfPeersContainer(true);
+          this.animateCSS(controlID, 'flash', 'animate__', function() {
+            this.hideScollOfPeersContainer(false);
+          }.bind(this), false, false);
+        }
+      }
+    }
   }
 
   removeTyperFromUI(peerID) {
@@ -357,10 +657,15 @@ class CMeeting extends CWindow {
     return false;
   }
   toggleFullScreenVideo(id) {
-    if (this.mMaxedVideo) {
-      this.minVid(id);
-    } else {
-      this.maxVid(id);
+    let peer = this.findPeerByID(id.split('_')[0]);
+    if (peer) {
+      if (peer.camActive) {
+        if (this.mMaxedVideo) {
+          this.minVid(id);
+        } else {
+          this.maxVid(id);
+        }
+      }
     }
   }
 
@@ -409,20 +714,24 @@ class CMeeting extends CWindow {
   meetingInitialization(id = null) {
 
     if (this.mVMContext.getConnectionState != eConnectionState.connected) {
-      this.showMessageBox('Not conntected', "⋮⋮⋮ Network is unavailable please check your connectivity.", eNotificationType.notification);
+      this.showMessageBox('Not conntected', "⋮⋮⋮ Network is unavailable please check your connectivity.", eNotificationType.notification, this);
     }
 
     if (id == null)
       id = this.getValue('meetingIDTxt');
+
     if (id.length == 0) {
-      this.showMessageBox('Unknown conference ID', "Please provide Conference ID. Think one up if you create it!", eNotificationType.notification);
+      this.showMessageBox('Unknown conference ID', "Please provide Conference ID. Think one up if you create it!", eNotificationType.notification, this);
       return;
     }
-    if (this.connectToSwarm(id)) {
+    this.mDesiredMeetingID = id;
+    if (this.connectToSwarm()) {
       this.setMeetingView();
       return true;
     } else {
-      this.showMessageBox('Unable to connect 🥺', "Unable to connect to ⋮⋮⋮ Swarm.", eNotificationType.error);
+      this.setMeetingView();
+      this.showMessageBox('Connectivity troubles 🥺', "Your connectivity seems obstructed, we'll be trying to resolve this..", eNotificationType.warning);
+      return true;
     }
     return false;
   }
@@ -435,50 +744,217 @@ class CMeeting extends CWindow {
 
     if (videoTag.length > 0) {
       videoTag[0].srcObject = stream;
+      videoTag[0].muted = true;
     }
   }
-  connectToSwarm(id) {
-    if (this.mSwarm == null) {
+  connectToSwarm() {
+
+    if (this.mConnectingToSwarmMutex)
+      return;
+
+    let now = this.mTools.getTime();
+
+    if ((now - this.mRecentSwarmConnectionAttempt) < 5) {
+      return;
+    }
+
+    try {
+      this.mConnectingToSwarmMutex = true;
+      this.mRecentSwarmConnectionAttempt = now;
+      //  if (this.mSwarm == null) {
       /*
       status: this.mStatus,
       peerID: this.mPeerID,
       swarmID: this.mSwarm.getID
       */
-      if (CVMContext.getInstance().getSwarmsManager.joinSwarm(id, this.mMyID, this.mPrivKey, eConnCapabilities.audioVideo)) {
+
+      //we join with full data, audio, video - so to prevent future renegotations.
+      //we then swap video streams (i.e. live cam / stub-dynamic-video / screen-sharing stream etc.) on demand.
+      //we also release hardware resources on demand (i.e. a swarm MIGHT be video-enabled, while streaming stub-video-frames BUT
+      //the hardware camera MAY be released at the very same time.)
+      //SwarmManager is responsible for optimization of hardware utilization through optimizeRequestedResources().
+      //Swarm Manager is responsible for preparation of hardware resources through prepareForCapabilities() - async.
+
+      let id = this.mDesiredMeetingID;
+      CVMContext.getInstance().getSwarmsManager.joinSwarm(id, this.mMyID, this.mPrivKey, eConnCapabilities.audioVideo, this);
+
+      //this.updateEffectiveOutgressCapabilities();
+      if (this.mSwarm == null) {
         this.mSwarm = CVMContext.getInstance().getSwarmsManager.findSwarmByID(id);
-        this.updateEffectiveOutgressCapabilities();
-        let ls = CVMContext.getInstance().getSwarmsManager.getLocalStream;
-        if (ls != null) {
-          if (!this.getStreamByID('Me'))
-            this.addStream(ls, 'Me');
 
-          this.setLocalStreamInUI(ls);
+
+        if (this.mSwarm) {
+          //Security - BEGIN
+          if (!this.mSwarm.isPrivate) {
+            /*
+            By default, the Swarm is to be protected under the stregth of the one-way hash transformation used to generate the Swarm Identifier.
+            That is also under the assumption that the True Identifier os a Swarm remains SECRET. If, the True Identifier is leaked, privacy MAY be compromised.
+            If, True Identifier is to be assumed as PUBLIC, users are advised to set an explicit pre-shared secret through invocation of the '/setkey [password]' command.
+            */
+
+            this.mSwarm.setPreSharedKey(id);
+          }
+          //Security - END
+          let connections = this.mSwarm.peers;
+
+          for (let i = 0; i < connections.length; i++) { //add already active swarm members.
+
+            if (!this.findPeerByID(connections[i].getPeerID)) {
+              let peer = new CPeer(peerID, connections[i], this);
+              this.addPeer(peer);
+            }
+
+            if (connections[i].ingressStream) {
+              if (!this.getStreamByID(connections[i].getPeerID)) {
+                this.addStream(connections[i].ingressStream, connections[i].getPeerID, false);
+              }
+
+              //update peer's media state in UI - BEGIN
+              this.setPeerCamStateInUI(connections[i].getPeerID, !connections[i].videoActive);
+              this.setPeerMicStateInUI(connections[i].getPeerID, !connections[i].audioActive);
+              //update peer's media state in UI - END
+
+            }
+          }
+          //todo: if we were to support multiple swarms for a single lifetime of this app, we would need to
+          //unregister all the callbacks from the previous swarm and sign-up for these all over again.
+
+          //Subscribe to high-level events
+          this.mSwarm.addSwarmConnectionStateChangeEventListener(this.swarmConnectionChangedEventHandler.bind(this), this.getID);
+          this.mSwarm.addSwarmRegistrationConfirmedEventListener(this.swarmRegistrationConfirmedEventHandler.bind(this), this.getID);
+          //this.mSwarm.addDataChannelMessageEventListener(this.newSwarmMessageEventHandler.bind(this), this.getID);
+          //^ we could be using the above low-level data-listener. Were we to do so, we would be attempting to instantiate CNetMsg and then CSwarmMsg
+          //the the received bytes ourselves. Instead, we rel on a higher-level notofication  addSwarmMessageListener().
+          this.mSwarm.addSwarmMessageListener(this.newSwarmMessageEventHandler.bind(this), this.getID);
+          this.mSwarm.addPeerStatusChangeEventListener(this.peerStatusEventListener.bind(this), this.getID);
+          this.mSwarm.addConnectionQualityChangeEventListener(this.connectionQualityEventListener.bind(this), this.getID);
+          this.mSwarm.addDataChannelStateChangeEventListener(this.dataChannelStateChangeEventhandler.bind(this), this.getID);
+          this.mSwarm.addConnectionStateChangeEventListener(this.connectionStateChangedEventHandler.bind(this), this.getID);
+          this.mSwarm.addPeerAuthResultListener(this.peerAuthResultEventHandler.bind(this), this.getID);
+          //subscribe to low-level WebRTC track-events (audio/video)
+          this.mSwarm.addTrackEventListener(this.trackEventHandler.bind(this), this.getID);
+
+          //security, keep listeing for changes to AUTH requirements
+          this.mSwarm.addSwarmAuthRequirementsChangedEventListener(this.swarmAuthChangedEventHandler.bind(this), this.getID);
         }
-        CVMContext.getInstance().getSwarmsManager.addLocalStreamEventListener(this.localStreamEventHandler.bind(this), this.mID);
-        //Subscribe to high-level events
-        this.mSwarm.addSwarmConnectionStateChangeEventListener(this.swarmConnectionChangedEventHandler.bind(this), this.mID);
-        this.mSwarm.addDataChannelMessageEventListener(this.newSwarmDataEventHandler.bind(this), this.mID);
-        this.mSwarm.addDataChannelStateChangeEventListener(this.dataChannelStateChangeEventhandler.bind(this), this.mID);
-        this.mSwarm.addConnectionStateChangeEventListener(this.connectionStateChangedEventHandler.bind(this), this.mID);
-        //subscribe to low-level WebRTC track-events (audio/video)
 
-        this.mSwarm.addTrackEventListener(this.trackEventHandler.bind(this), this.mID);
+
+        if (!this.getStreamByID('Me')) {
+          let ls = this.mSwarm.getLocalDummyStream;
+          if (ls != null) {
+            this.addStream(ls, 'Me', true);
+            this.setPeerConnQualityInUI('Me', this.mVMContext.getIsEncryptionAvailable() ? eConnQuality.medium : eConnQuality.low);
+            this.setLocalStreamInUI(ls);
+          }
+        }
+
+
         return true;
-      } else return false;
-    } else {
-      return false;
+      } else {
+        return false;
+      }
+    } finally {
+      this.mConnectingToSwarmMutex = false;
     }
   }
+
 
   connectionStateChangedEventHandler(event) {
     if (event.state == eConnectionState.disconnected) {
       this.removeStreamByPeer(event.peerID);
     }
   }
+
+  async sessionKeyAvailabilityChangedCallback(available) {
+    if (available) {
+      this.setPeerConnQualityInUI('Me', eConnQuality.max);
+      CTools.getInstance().logEvent('VM Context reported session key to be available..', eLogEntryCategory.dApp, 1, eLogEntryType.notification, this);
+
+      if (this.mSwarm) {
+        gTools.sleeper(1000).then(function() {
+          if (this.connectToSwarm(this.mSwarm.getID)) {
+            //  this.showMessageBox('Everything is fine😊', "full connectivity has been restored..", eNotificationType.notification, this);
+          }
+        }.bind(this));
+
+      }
+    } else {
+      this.setPeerConnQualityInUI('Me', eConnQuality.medium);
+    }
+  }
+
+  async connectionStatusChangedCallback(status) { //do not rely on this for swarm connectivity. Session key might not be available.
+    if (this.mKnownConnectionStatus == status)
+      return;
+
+    let visiblePopUpsCount = this.getVisiblePopUpsCount();
+    if (visiblePopUpsCount) {
+      this.closePopUp();
+    }
+    switch (status) {
+      case eConnectionState.disconnected:
+        this.mKnownConnectionStatus = status;
+        this.setPeerConnQualityInUI('Me', eConnQuality.none);
+        //  this.showMessageBox('Connectivity troubles🥺', "We'll be trying to restore your connectivity..", eNotificationType.error);
+        break;
+      case eConnectionState.connecting:
+        this.setPeerConnQualityInUI('Me', eConnQuality.low);
+        break;
+      case eConnectionState.connected:
+        //we would indicate eConnQuality.max once sessionKeyAvailabilityChangedCallback() is fired.
+
+        if (this.mSwarm && !this.isPeerInUI('Me')) {
+          let ls = this.mSwarm.getLocalDummyStream;
+          if (ls != null) {
+            this.addStream(ls, 'Me', true);
+          }
+        }
+
+        this.setPeerConnQualityInUI('Me', eConnQuality.medium);
+        this.mKnownConnectionStatus = status;
+
+        break;
+      case eConnectionState.aboutToShutDown:
+        this.setPeerConnQualityInUI('Me', eConnQuality.medium);
+
+        break;
+
+      default:
+
+    }
+  }
+  peerAuthResultEventHandler(event) {
+    if (event.result == eSwarmAuthResult.success) {
+      event.connection.unmute(true, true);
+      CTools.getInstance().logEvent(event.connection.getIPAddress + ' successfully authenticated with local Swarm.', eLogEntryCategory.dApp, 1, eLogEntryType.notification);
+
+
+    } else
+    if (event.result == eSwarmAuthResult.failure) {
+      event.connection.unmute(true, true);
+      CTools.getInstance().logEvent(event.connection.getIPAddress + ' failed to authenticate with local Swarm.', eLogEntryCategory.dApp, 1, eLogEntryType.notification);
+
+    }
+  }
+
   localStreamEventHandler(event) {
     this.setOutBoundStream(event.stream);
     //show the outgresss audio/video multiplexed stream to user
   }
+
+  //This gets called whenever Authorization requirements for this swarm change.
+  swarmAuthChangedEventHandler(e) {
+    switch (e.auth) {
+      case eSwarmAuthRequirement.open:
+        this.setPeerAuthStateInUI('Me', 0);
+        break;
+      case eSwarmAuthRequirement.PSK_ZK:
+        this.setPeerAuthStateInUI('Me', 3);
+        break;
+    }
+    this.setTitle(this.genWindowTitle());
+  }
+
   //Note: the onTrack event will  double fire for both the Audio and Video track.
   //Yet Still, these tracks are synchronized and multiplexed over a single stream.
   //Thus we keep track of the added streams and so avoid double-addition.
@@ -487,23 +963,93 @@ class CMeeting extends CWindow {
     peerID: this.mPeerID,
     swarmID: this.mSwarm.getID*/
     let peerID = this.mTools.arrayBufferToString(e.peerID);
-    if (e.event.track.kind != 'video')
-      return;
-    if (this.getStreamByID(e.peerID))
+    //if (e.event.track.kind != 'video')
+    //  return;
+    let stream = this.getStreamByID(e.peerID)
+    if (stream) {
+      this.removeStreamByPeerInUI(e.peerID);
       this.removeStreamByPeer(e.peerID);
+    }
 
-    this.addStream(e.event.streams[0], e.peerID)
+    //  this.addStream(e.event.streams[0], e.peerID)
 
   }
   setOutBoundStream(stream) {
-    this.mOutBoundStream = stream;
-    if (!this.getStreamByID('Me'))
-      this.addStream(stream, 'Me');
+    if (!this.getStreamByID('Me')) {
+      this.addStream(stream, 'Me', true);
+      this.setPeerConnQualityInUI('Me', this.mVMContext.getIsEncryptionAvailable() ? eConnQuality.max : eConnQuality.low);
+    }
+    // push of an appropriate  button should be the actual trigger.
+
+    //even though this is already accomplished in a synchornous way
+    //during toggleCam() / toffleMic() sequence, we let this be to account for a case in which
+    //another UI dApp causes the local stream maintained by the swarm Manager to be modified
+    //that would be important in a case in which this dApp requested only microphone
+    //but another dApp requested both microphone and camera; in which case the previus local global stream
+    //would get invalidated entirely, thus we would need to update in here as well.
+
+    //check if casued by an external event (caused by another UI dApp)
+    if (!this.getIsSwitchingData) { //we check to eliminate concurrency issues.
+      //otherwise we would be switching tracks twice, one time in the midst of our perfectly synchronized sequence occuring durring toggleMic/Cam() invocations.
+      if (stream != null && stream.getVideoTracks().length > 0) {
+        let videoTrack = null;
+
+        //find an active video track
+        stream.getTracks().forEach(function(track) {
+          if (track.readyState == 'live' && track.kind === 'video') {
+            videoTrack = track;
+          }
+        });
+        if (!videoTrack) {
+          this.showMessageBox('No audio🥺', "Ooopsy.. Web-browser did not return any active video streams..", eNotificationType.error);
+          return;
+        }
+
+        this.mSwarm.setLIVEVideoTrack(videoTrack); //do not wait; this async function is called only from an event handler anyway
+      }
+
+      if (stream != null && stream.getAudioTracks().length > 0) {
+        let audioTrack = null;
+        //find an active audio track
+        stream.getTracks().forEach(function(track) {
+          if (track.readyState == 'live' && track.kind === 'audio') {
+            if (track.muted == true) {
+              this.mCamMutedInLocalSystem = true;
+              this.showMessageBox('Microphone Disabled🥺', "microphone seems disabled in your local system settings..", eNotificationType.error);
+              this.getControl('micBtnOuter').classList.remove('orangeTxt', 'greenTxt', 'redTxt');
+              this.getControl('micBtnOuter').classList.add('orangeTxt');
+              this.notifyMic(true);
+            }
+            audioTrack = track;
+          }
+        }.bind(this));
+        if (!audioTrack) {
+          this.showMessageBox('No audio🥺', "Web-browser did not return any active audio streams..", eNotificationType.error);
+          return;
+        }
+        this.mSwarm.setLIVEAudioTrack(audioTrack); //do not wait; this async function is called only from an event handler anyway
+      }
+    }
 
     this.setLocalStreamInUI(stream);
   }
 
+  genWindowTitle() {
+    let swarm = this.mSwarm;
+    let title = '⋮⋮⋮ eMeeting';
+
+    if (swarm) {
+      title = "Conference '" + (this.mTools.lengthOf(this.mSwarm.trueID) ? this.mTools.bytesToString(this.mSwarm.trueID) : this.mTools.bytesToString(this.mSwarm.getID)) + "'" + (swarm.isPrivate && swarm.isDedicatedPSK ? " 🔒" : "") + " (connected as " + this.mTools.bytesToString(this.mSwarm.getMyID) + ") - ⋮⋮⋮ eMeeting";
+    }
+    return title;
+  }
+  swarmRegistrationConfirmedEventHandler(event) {
+    this.setPeerConnQualityInUI('Me',  eConnQuality.max);
+  }
+
   swarmConnectionChangedEventHandler(event) {
+
+    let msg, wrapper, serializedNetMsg;
     switch (event.status) {
 
       case eSwarmConnectionState.intial:
@@ -511,42 +1057,216 @@ class CMeeting extends CWindow {
       case eSwarmConnectionState.negotiating:
         break;
       case eSwarmConnectionState.active:
-        let peer = new CPeer(event.peerID, event.connection);
+        let peer = new CPeer(event.peerID, event.connection, this);
         this.addPeer(peer);
-        break;
+        CTools.getInstance().logEvent('Notifying ' + this.mTools.arrayBufferToString(event.peerID) + " about current media..", eLogEntryCategory.dApp, 1, eLogEntryType.notification);
+
+        //notify about the current state of camera
+        event.connection.notifyAboutStateOfMedia(this.getProtocolID);
+
         break;
       case eSwarmConnectionState.closed:
-        this.removeStream(event.peerID);
+        this.removeStreamByPeerInUI(event.peerID);
         this.removePeer(event.peerID);
         break;
     }
   }
 
-  newSwarmDataEventHandler(e) {
-    try {
-      let data = e.event.data;
-      let wrapper = CNetMsg.instantiate(data);
+  //This is based on active keep-alive mechanics.
+  //the underlying connection MIGHT still be barely 'alive'.
+  peerStatusEventListener(e) {
 
-      switch (wrapper.getEntityType) {
+    let stream = e.connection.ingressStream;
+    switch (e.status) {
+      case eSwarmPeerStatus.notReachable:
+        this.removeStreamByPeerInUI(e.peerID); //just in the user-interface. Would be removed entirely once connection terminates.
+        //this.removePeer(event.peerID); //todo: gray out node instead. Remove once connection terminates.
+        break;
+      case eSwarmPeerStatus.active:
+        //make sure peer is available within the user interface
+
+        let peer = this.findPeerByID(e.peerID);
+
+        if (!peer) {
+          peer = new CPeer(e.peerID, e.connection, this);
+          this.addPeer(peer);
+        }
+
+        if (stream && !this.isPeerInUI(e.peerID)) {
+          this.addStream(stream, e.peerID, true);
+        }
+
+        break;
+
+      default:
+
+    }
+  }
+
+
+  //This is based on active keep-alive mechanics.
+  //the underlying connection MIGHT still be barely 'alive'.
+  connectionQualityEventListener(e) {
+
+    let peer = this.findPeerByID(e.peerID);
+    if (!peer)
+      return;
+
+    //update the UI..
+    this.setPeerConnQualityInUI(e.peerID, e.quality);
+
+    //now,some addiitonal processing may follow..
+    switch (e.quality) {
+      case eConnQuality.none:
+
+        break;
+      case eConnQuality.low:
+
+        break;
+
+      case eConnQuality.medium:
+
+        break;
+      case eConnQuality.high:
+
+        break;
+      default:
+
+    }
+  }
+  newSwarmMessageEventHandler(e) {
+    //local variables - BEGIN
+    let swarmAuthData = null;
+    //local variables - END
+
+    try {
+      let msg = e.message;
+      switch (msg.protocolID) {
+        case 1: //process Standard Messages (CSwarmMsg) as well.
         case this.getProtocolID: //eMeeting Protocol
-          let msg = CChatMsg.instantiate(wrapper.getData);
+
 
           //Decide on the External Flag - BEGIN
           if (this.mTools.compareByteVectors(this.mMyID, msg.mFromID))
             msg.mExternal = false;
           else msg.mExternal = true;
           //Decide on the External Flag - END
+          let peer = this.findPeerByID(msg.sourceID);
+          let now = gTools.getTime();
+          switch (msg.type) {
+            case eSwarmMsgType.command:
+              if (!this.mSwarm.processCommand(msg.getDataTxt, e.connection)) {
 
-          switch (msg.getType) {
-            case eChatMsgType.text:
+                CTools.getInstance().logEvent('Invalid Swarm command provided by ' + e.getIPAddress, eLogEntryCategory.dApp, 1, eLogEntryType.notification);
+
+              } else {
+                CTools.getInstance().logEvent('Valid Swarm command provided by ' + e.getIPAddress, eLogEntryCategory.dApp, 1, eLogEntryType.notification);
+
+              }
+              break;
+
+
+              //Only for Authenticated Peers - BEGIN
+
+            case eSwarmMsgType.text:
+              if (!(e.connection.isAuthenticated || this.mSwarm.isPrivate == false))
+                break;
               this.addMessage(msg);
               break;
 
-            case eChatMsgType.typing:
-              let peer = this.findPeerByID(msg.getSourceID);
+            case eSwarmMsgType.typing:
+              if (!(e.connection.isAuthenticated || this.mSwarm.isPrivate == false))
+                break;
               if (peer != null)
                 peer.pingTyping();
               break;
+
+            case eSwarmMsgType.startedScreenSharing:
+              if (!(e.connection.isAuthenticated || this.mSwarm.isPrivate == false))
+                break;
+
+              if (peer != null)
+                peer.screenSharingActive = true;
+              break;
+            case eSwarmMsgType.stoppedScreenSharing:
+              if (!(e.connection.isAuthenticated || this.mSwarm.isPrivate == false))
+                break;
+              if (peer != null)
+                peer.screenSharingActive = false;
+              break;
+            case eSwarmMsgType.mutedCam:
+              if (!(e.connection.isAuthenticated || this.mSwarm.isPrivate == false))
+                break;
+              if (peer != null)
+                peer.camActive = false;
+              break;
+            case eSwarmMsgType.unmutedCam:
+              if (!(e.connection.isAuthenticated || this.mSwarm.isPrivate == false))
+                break;
+              if (peer != null)
+                peer.camActive = true;
+              break;
+            case eSwarmMsgType.mutedAudio:
+              if (!(e.connection.isAuthenticated || this.mSwarm.isPrivate == false))
+                break;
+              if (peer != null)
+                peer.micActive = false;
+              break;
+            case eSwarmMsgType.unmutedAudio:
+              if (!(e.connection.isAuthenticated || this.mSwarm.isPrivate == false))
+                break;
+              if (peer != null)
+                peer.micActive = true;
+              break;
+
+              //Only for Authenticated Peers - END
+
+              //Security - BEGIN
+            case eSwarmMsgType.authenticationFailure:
+              if ((now - this.mLastAuthFailureNotificationTimestamp) > 30) {
+                if (this.mSwarm.isDedicatedPSK) {
+                  this.showMessageBox('Another password needed? 🫡', gTools.arrayBufferToString(peer.getID) + ' rejected your credentials..', eNotificationType.error);
+                  this.mLastAuthFailureNotificationTimestamp = now;
+                }
+              }
+              break;
+
+            case eSwarmMsgType.zeroKnowledgeProof:
+
+              break;
+            case eSwarmMsgType.authenticationRequestCand:
+              break;
+            case eSwarmMsgType.authenticationRequestVal:
+              // should we notify the user?
+
+              let swarmAuthData = CSwarmAuthData.instantiate(msg.dataBytes);
+
+              this.setPeerAuthStateInUI(peer.getID, 1);
+
+              if ((now - this.mLastAuthRequestNotificationTimestamp) > 360) {
+                this.closePopUp();
+                if (swarmAuthData.isDedicatedPSK && !this.mSwarm.isDedicatedPSK) { //otherwise based on image(True Swarm ID | IV time-based), and thus no need to ask.
+                  this.showMessageBox('Authentication needed 🤐', "This ⋮⋮⋮ Swarm is now private, " +
+                    gTools.arrayBufferToString(peer.getID) + ' is requesting you to authenticate.', eNotificationType.notification, this);
+                  this.mLastAuthRequestNotificationTimestamp = now;
+                }
+              }
+
+              break;
+            case eSwarmMsgType.authenticationSuccess:
+              //  this.closePopUp();
+              this.setPeerAuthStateInUI(peer.getID, 2);
+
+              if (this.mSwarm && this.mSwarm.isDedicatedPSK && (now - this.mLastAuthAcceptedNotificationTimestamp) > 360) {
+                //show notification only is Swarm is using a dedicated ZKP PSK.
+                this.showMessageBox('Authentication succeeded! 😊', gTools.arrayBufferToString(peer.getID) + ' honored your credentials.', eNotificationType.notification, this);
+
+
+                this.mLastAuthAcceptedNotificationTimestamp = now;
+              }
+
+              break;
+              //Security - END
             default:
 
               //ignore otherwise
@@ -556,20 +1276,13 @@ class CMeeting extends CWindow {
       }
 
     } catch (error) {
-      console.log('Invalid ChatMsg received');
+      CTools.getInstance().logEvent('Error: crytical error during communication with ' + e.getIPAddress, eLogEntryCategory.dApp, 1, eLogEntryType.notification);
     }
   }
 
   dataChannelStateChangeEventhandler(event) {
 
   }
-  /*
-  const eSwarmConnectionState = {
-    intial: 0,
-    negotiating: 1,
-    active: 2,
-    closed: 3
-  };*/
 
 
   set setPrivKey(priv = null) {
@@ -596,31 +1309,82 @@ class CMeeting extends CWindow {
   initialize() //called only when app needs a thread/processing queue of its own, one seperate from the Window's
   //internal processing queue
   {
-    this.mControler = setInterval(this.mControlerThreadF.bind(this), this.controllerThreadInterval);
+    this.mController = CVMContext.getInstance().createJSThread(this.controllerThreadF.bind(this), this.getProcessID, this.mControllerThreadInterval);
   }
 
   pingFullNode() {
 
   }
 
-  mControlerThreadF() {
-    if (this.mControlerExecuting)
-      return false;
+  //Should reactive notifications fail for whatever reason to satisify proper peers' visibility
+  //we make sure peers are visible in a pro-active mannear right over here.
+  updatePeersView() {
 
-    this.mControlerExecuting = true; //mutex protection
-    try {
-      this.redrawMe();
-      this.updatePeersCount();
-      this.renderTypingPeers();
+    let showEvenNotAuthed = true;
+    let appPeer = null;
+
+    if (this.mSwarm) {
+      let peers = this.mSwarm.peers;
+      for (let i = 0; i < peers.length; i++) {
 
 
-      //operational logic - BEGIN
+        //check if peers is known by this app
+        appPeer = this.findPeerByID(peers[i].getPeerID);
 
-      //operational logic - END
-    } catch (error) {
+        if (!appPeer) //make sure these connections are known by the controller.
+        {
+          appPeer = new CPeer(peers[i].getPeerID, peers[i], this);
+          this.addPeer(appPeer);
+        }
 
+        if (showEvenNotAuthed || !this.mSwarm.isPrivate) {
+
+          //make sure peer is available within the UI..
+          if (!this.isPeerInUI(peers[i].getID) && peers[i].ingressStream) {
+            this.addStream(peers[i].ingressStream, peers[i].getID);
+          }
+          //now as it's visible - update its media.
+          appPeer.micActive = peers[i].audioActive; // setters update view
+          appPeer.camActive = peers[i].videoActive;
+
+
+        } else if (peers[i].isAuthenticated) {
+          //Swarm requires authentication.
+
+          if (!this.isPeerInUI(peers[i].getID) && peers[i].ingressStream) {
+            //make sure peer is available within the UI..
+            this.addStream(peers[i].ingressStream, peers[i].getID);
+          }
+
+          appPeer.micActive = peers[i].audioActive; // setters update view
+          appPeer.camActive = peers[i].videoActive;
+
+        }
+
+      }
     }
-    this.mControlerExecuting = false;
+  }
+
+
+  //shoud re-active logic fail for whatever the reaosn.
+  //here we ensure that app is aware of the swarm.
+  //at least we enforce that a local reference to a desired swarm is set so that further logic (also failover logic)
+  //could take it from here. Note that not even network connectivity is needed for a local instance of a swarm to be activated  by joinSwarm().
+  ensureSwarmMembership() {
+    if (this.mSwarm == null && this.mTools.getLength(this.mDesiredMeetingID) > 0) {
+      this.connectToSwarm();
+    }
+  }
+
+  controllerThreadF() {
+    //operational logic - BEGIN
+
+    this.ensureSwarmMembership();
+    this.redrawMe();
+    this.updatePeersCount();
+    this.renderTypingPeers();
+    this.updatePeersView();
+    //operational logic - END
 
   }
 
@@ -649,9 +1413,9 @@ class CMeeting extends CWindow {
   }
 
   open() { //Overloaded Window-Opening Event
-    this.mSwarmManager.bootstrapMedia();
     this.mContentReady = false;
-    console.log('⋮⋮⋮Meeting booting up..')
+    CTools.getInstance().logEvent('⋮⋮⋮Meeting booting up..', eLogEntryCategory.dApp, 1, eLogEntryType.notification);
+
     super.open();
     //modify content here
     this.preInit();
@@ -718,11 +1482,43 @@ class CMeeting extends CWindow {
 
   closeWindow() {
 
-    if (this.mControler > 0)
-      clearInterval(this.mControler); //shut-down the thread if active
 
-    if (this.mSwarm != null)
-      this.mSwarm.close();
+    if (this.mSwarm) { //indicate that neither camera nor microphone are neeeded anymore.
+      this.mSwarm.setCamInUse = false;
+      this.mSwarm.setMicInUse = false;
+
+      let coolingDown = false;
+      let dummy = this.mSwarm.getLocalDummyStream;
+      if (!(this.mCamMuted && this.mSSMuted)) {
+        //let the stub video keep spinning for a while
+        //  this.mSwarm.replaceVideoTrack(dummy.getVideoTracks()[0]); //IMPORTANT! let the stub-video play no matter what
+        // ^avoid using this IF by design only one LIVE audio/video stream is to be used.
+        //in such a case use setLIVEVideoTrack, which enables for Swarm-Global mute() and unmute() functionalities, for improved security and streamlined design.
+
+        //todo: do so only if the only instance using the current stream
+        //[Security] - BEGIN
+        this.mSwarm.mute(true, true); //mute all tracks.
+        //[Security] - END
+
+        coolingDown = true;
+      }
+
+      gTools.sleeper(coolingDown ? 1000 : 100).then(function() {
+          this.mSwarm.mSwarmManager.prepareForCapabilities();
+        }.bind(this))
+        .then(function() {
+          return this.updateEffectiveOutgressCapabilities()
+        }.bind(this));
+    }
+    if (this.mController > 0)
+      CVMContext.getInstance().stopJSThread(this.mController);
+
+    //if (this.mSwarm != null)
+    //  this.mSwarm.close();
+    //        ^
+    //Notice: we could have closed handle to the entire Swarm, however this would temrinate the Swarm-system-wide.
+    //We do not want that, as other UI dApps may be using it. Peers get removed, from the view, based on the lack of keep-alive datagrams.
+
     super.closeWindow();
   }
 
@@ -866,7 +1662,7 @@ class CMeeting extends CWindow {
     $(this.getBody).find('#joinMeetingView').removeClass('show');
     $(this.getBody).find('#activeMeetingView').addClass('show');
     this.mActiveView = eView.activeMeeting;
-    this.setTitle(this.mTools.bytesToString(this.mSwarm.getID) + ' - ⋮⋮⋮ Meeting');
+    this.setTitle(this.genWindowTitle());
   }
 
   setJoinMeetingView() {
@@ -875,11 +1671,11 @@ class CMeeting extends CWindow {
     this.mActiveView = eView.joinMeeting;
   }
 
-  //Appends message to chat. Takes instance of CChatMsg.
+  //Appends message to chat. Takes instance of CSwarmMsg.
   addMessage(msg) {
     let renderedMsg = msg.getRendering();
     if (renderedMsg == null) {
-      console.log('invalid  msg');
+      CTools.getInstance().logEvent('an invalid chat message-container received.', eLogEntryCategory.dApp, 1, eLogEntryType.notification);
       return false;
     }
 
@@ -887,10 +1683,10 @@ class CMeeting extends CWindow {
     this.refreshGlobalChat();
     return true;
   }
-  newGlobalMsgFromMe(txt) {
+  executeGlobalTxt(txt) {
 
     //if (this.mSwarm == null || this.mSwarm.getState == eSwarmState.idle) {
-    //  this.showMessageBox('Empty conference room', "Right now there's nobody to send to ;-(", eNotificationType.notification);
+    //  this.showMessageBox('Empty conference room', "Right now there's nobody to send to ;-(", eNotificationType.notification, this);
     //  return;
     //}
 
@@ -899,17 +1695,51 @@ class CMeeting extends CWindow {
     //this.addStream();
     if (txt.length == 0)
       return false;
+
     if (this.mSwarm != null) {
+      if (this.isTxtACommand(txt)) {
+        let cmdRes = this.mSwarm.processCommand(txt, null);
 
-      let msg = new CChatMsg(eChatMsgType.text, this.mMyID, null, this.mUserGlobalOutTxt.value);
-      $(this.mUserGlobalOutTxt).val('');
+        switch (cmdRes) {
+          case eSwarmCmdProcessingResult.failure:
+            this.showMessageBox('Command failed 🥺', "something went wrong..", eNotificationType.error);
+            break;
+          case eSwarmCmdProcessingResult.invalid:
+            this.showMessageBox('Invalid command 🥺', "The command does not look right..", eNotificationType.error);
+            break;
+          case eSwarmCmdProcessingResult.invalidInThisContext:
+            this.dispatchCommand(txt); //that would be dispatched only to authenticated users.
+            //authentication requests, authentication results etc. - these are dispatched internally by the API - ONLY.
+            CTools.getInstance().logEvent('Command dispatched to Swarm..', eLogEntryCategory.dApp, 1, eLogEntryType.notification);
 
-      let wrapper = new CNetMsg(this.getProtocolID, eNetReqType.request, msg.getPackedData());
-      let serializedNetMsg = wrapper.getPackedData();
-      this.mSwarm.sendData(serializedNetMsg);
-      return this.addMessage(msg);
+            break;
+          case eSwarmCmdProcessingResult.success:
+
+            break;
+          default:
+
+        }
+
+      } else {
+        this.dispatchTxt(txt);
+      }
+
+      this.clearGlobalMsgTxt();
 
     }
+  }
+
+  clearGlobalMsgTxt() {
+    $(this.mUserGlobalOutTxt).val(''); //clear the textbox in UI
+  }
+
+  isTxtACommand(txt) {
+    if (this.mTools.isNull(txt) || txt.length == 0)
+      return false;
+    if (txt[0] == "/") {
+      return true;
+    }
+    return false;
   }
 
   notifyTyping() {
@@ -918,17 +1748,84 @@ class CMeeting extends CWindow {
     if (swarm != null) {
       if (!this.isSFOk)
         return; //not to spam the network
-      let msg = new CChatMsg(eChatMsgType.typing, this.mMyID);
+      let msg = new CSwarmMsg(eSwarmMsgType.typing, this.mMyID);
 
       let wrapper = new CNetMsg(this.getProtocolID, eNetReqType.request, msg.getPackedData());
       let serializedNetMsg = wrapper.getPackedData();
       swarm.sendData(serializedNetMsg);
-
     }
-
   }
 
-  removeStream(peerID = null) {
+  notifyMic(isMuted = false) {
+    let swarm = this.mSwarm;
+    if (swarm != null) {
+      if (!this.isSFOk)
+        return; //not to spam the network
+      let msg = new CSwarmMsg(isMuted ? eSwarmMsgType.mutedAudio : eSwarmMsgType.unmutedAudio, this.mMyID);
+      let wrapper = new CNetMsg(this.getProtocolID, eNetReqType.request, msg.getPackedData());
+      let serializedNetMsg = wrapper.getPackedData();
+      swarm.sendData(serializedNetMsg);
+    }
+  }
+
+
+  notifyCam(isMuted = false) {
+    let swarm = this.mSwarm;
+    if (swarm != null) {
+      if (!this.isSFOk)
+        return; //not to spam the network
+      let msg = new CSwarmMsg(isMuted ? eSwarmMsgType.mutedCam : eSwarmMsgType.unmutedCam, this.mMyID);
+      let wrapper = new CNetMsg(this.getProtocolID, eNetReqType.request, msg.getPackedData());
+      let serializedNetMsg = wrapper.getPackedData();
+      swarm.sendData(serializedNetMsg);
+    }
+  }
+
+  notifyScreenSharing(isMuted = false) {
+    let swarm = this.mSwarm;
+    if (swarm != null) {
+      if (!this.isSFOk)
+        return; //not to spam the network
+      let msg = new CSwarmMsg(isMuted ? eSwarmMsgType.stoppedScreenSharing : eSwarmMsgType.startedScreenSharing, this.mMyID);
+      let wrapper = new CNetMsg(this.getProtocolID, eNetReqType.request, msg.getPackedData());
+      let serializedNetMsg = wrapper.getPackedData();
+      swarm.sendData(serializedNetMsg);
+    }
+  }
+
+  notifyMic(isMuted = false) {
+    let swarm = this.mSwarm;
+    if (swarm != null) {
+      if (!this.isSFOk)
+        return; //not to spam the network
+      let msg = new CSwarmMsg(isMuted ? eSwarmMsgType.mutedAudio : eSwarmMsgType.unmutedAudio, this.mMyID);
+      let wrapper = new CNetMsg(this.getProtocolID, eNetReqType.request, msg.getPackedData());
+      let serializedNetMsg = wrapper.getPackedData();
+      swarm.sendData(serializedNetMsg);
+    }
+  }
+
+  dispatchCommand(cmd) {
+    let swarm = this.mSwarm;
+    if (swarm != null) {
+      if (!this.isSFOk)
+        return; //not to spam the network
+      let msg = new CSwarmMsg(eSwarmMsgType.command, this.mMyID);
+      msg.setData = this.mTools.convertToArrayBuffer(cmd);
+      let wrapper = new CNetMsg(this.getProtocolID, eNetReqType.request, msg.getPackedData());
+      let serializedNetMsg = wrapper.getPackedData();
+      swarm.sendData(serializedNetMsg);
+    }
+  }
+  dispatchTxt(txt) {
+    let msg = new CSwarmMsg(eSwarmMsgType.text, this.mMyID, null, txt);
+    let wrapper = new CNetMsg(this.getProtocolID, eNetReqType.request, msg.getPackedData());
+    let serializedNetMsg = wrapper.getPackedData();
+    this.mSwarm.sendData(serializedNetMsg);
+    this.addMessage(msg);
+  }
+
+  removeStreamByPeerInUI(peerID = null) {
     if (peerID == null)
       return false;
     let peerIDStr = this.mTools.arrayBufferToString(peerID);
@@ -937,10 +1834,21 @@ class CMeeting extends CWindow {
     return true;
   }
 
-  removeStreamByPeer(peerID = null) {
+  isPeerInUI(peerID = null) {
+    if (peerID == null)
+      return false;
+    let peerIDStr = this.mTools.arrayBufferToString(peerID);
+    let titleTagID = peerIDStr + '_stream';
+    return $(this.mVideoFeeds).find('#' + titleTagID).length > 0;
+  }
+
+  removeStreamByPeer(peerID = null, updateUI = false) {
     if (peerID == null || peerID.byteLength == 0)
       return false;
 
+    if (updateUI) {
+      this.removeStreamByPeerInUI(peerID);
+    }
     let index = -1;
 
     //check if connection truly is withint the pending-connections pool
@@ -961,37 +1869,50 @@ class CMeeting extends CWindow {
 
 
   //Appends a video/audio-stream. The stream is played automatically.
-  addStream(stream, peerID) {
+  addStream(stream, peerID, isLocal = false) {
     //try {
+    if (this.mStreamsViewMutex)
+      return false;
+
+
     if (stream == null || peerID == null)
       return false;
 
-    let peerIDStr = this.mTools.arrayBufferToString(peerID);
-    let video = null;
-    let titleTagID = peerIDStr + '_stream';
-    let containerHtml = streamTemplate.replace('[FIELD_PEER_ID]', titleTagID);
-    let streamContainer = $.parseHTML(containerHtml)[0];
+    this.mStreamsViewMutex = true;
+    try {
+      let peerIDStr = this.mTools.arrayBufferToString(peerID);
+      let video = null;
+      let audio = null;
+      let videoContainer = null;
+      let titleTagID = peerIDStr + '_stream';
+      let containerHtml = streamTemplate.replace('[FIELD_PEER_ID]', titleTagID);
+      let streamContainer = $.parseHTML(containerHtml)[0];
 
-    let audioTracks = stream.getAudioTracks();
-    if (peerID != 'Me')
-      audioTracks[0].enabled = true;
-    //Todo: add stub image when video track muted.
-    let streamTitleContainer = $.parseHTML(streamTitleTemplate.replace('[fieldTitle]', peerIDStr))[0];
-    if (stream == null) { //just use a stub test-stream
-      video = $('<video />', {
-        id: 'video',
-        height: 'auto',
-        width: '100%',
-        poster: '/dApps/Meeting/img/icon.png',
-        src: '/dApps/Meeting/img/test.ogg',
-        controls: false
-      }).prop({
-        muted: false,
-        autoplay: true,
-        loop: true
-      });
-    } else { //use the actual peer's stream
-      /*video = $('<video />', {
+      let audioTracks = stream.getAudioTracks();
+      //if (peerID != 'Me')
+      //    audioTracks[0].enabled = true;
+      //Todo: add stub image when video track muted.
+      let streamTitleContainer = $.parseHTML(streamTitleTemplate.replace('[fieldTitle]', peerIDStr))[0];
+      let statusContainer = $.parseHTML(streamStatusTemplate.replace('[FIELD_PEER_ID]', peerIDStr))[0];
+      let statusMicContainer = $.parseHTML(streamStatusMicTemplate.replace('[FIELD_PEER_ID]', peerIDStr))[0];
+      let statusQualityContainer = $.parseHTML(streamQualityTemplate.replace('[FIELD_PEER_ID]', peerIDStr))[0];
+      let statusAuthContainer = $.parseHTML(streamStatusAuthTemplate.replace('[FIELD_PEER_ID]', peerIDStr))[0];
+
+      if (stream == null) { //just use a stub test-stream
+        video = $('<video />', {
+          id: 'video',
+          height: 'auto',
+          width: '100%',
+          poster: '/dApps/Meeting/img/icon.png',
+          src: '/dApps/Meeting/img/test.ogg',
+          controls: false
+        }).prop({
+          muted: false,
+          autoplay: true,
+          loop: true
+        });
+      } else { //use the actual peer's stream
+        /*video = $('<video />', {
           id: 'video',
           height: 'auto',
           width: '100%',
@@ -1004,35 +1925,66 @@ class CMeeting extends CWindow {
           playsinline:true
         });
 
-
-
         video.on("onloadedmetadata", function (e) {
 e.target.play();
 });
 */
-      video = document.createElement('video');
-      video.autoplay = true;
-      video.srcObject = stream;
-      video.onloadedmetadata = function(e) {
-        video.play();
-      };
+        //HTML 5 elemens - BEGIN
+        //notice: we need seperate Video and Audio elements sicne the Video HTML5 element is not suitable for situations when there's no video track (audio only).
+        videoContainer = document.createElement('div');
+        videoContainer.id = (peerIDStr + "_vid");
+        videoContainer.classList.add('vidContainer');
+        video = document.createElement('video');
+        video.autoplay = true;
+        video.srcObject = stream;
+        video.muted = true; //isLocal; play only through the audio element.
+        video.onloadedmetadata = function(e) {
+          video.play().then(() => { //https://stackoverflow.com/questions/36803176/how-to-prevent-the-play-request-was-interrupted-by-a-call-to-pause-error
+            video.pause();
+            video.currentTime = 0;
+            video.play();
+          })
+        };
 
+        audio = document.createElement('audio');
+        audio.id = (peerIDStr + "_audio");
+        audio.autoplay = true;
+        audio.hidden = true;
+        audio.srcObject = stream;
+        audio.muted = true;
+        audio.onloadedmetadata = function(e) {
+          audio.play().then(() => { //https://stackoverflow.com/questions/36803176/how-to-prevent-the-play-request-was-interrupted-by-a-call-to-pause-error
+            audio.pause();
+            audio.currentTime = 0;
+            audio.play();
+          })
+        };
+        //HTML 5 elemens - BEGIN
+      }
+
+      $(videoContainer).append(video);
+      $(streamContainer).append(videoContainer);
+      $(streamContainer).append(audio);
+      $(streamContainer).append(streamTitleContainer);
+      $(statusContainer).append(statusMicContainer);
+      $(statusContainer).append(statusQualityContainer);
+      $(statusContainer).append(statusAuthContainer);
+      $(streamContainer).append(statusContainer);
+      $(this.mVideoFeeds).append(streamContainer);
+      this.mStreams.push({
+        peerID: peerID,
+        stream
+      });
+
+
+      this.refreshStreams();
+
+    } finally {
+      this.mStreamsViewMutex = false;
     }
 
-
-    $(streamContainer).append(video);
-    $(streamContainer).append(streamTitleContainer);
-
-    $(this.mVideoFeeds).append(streamContainer);
-    this.mStreams.push({
-      peerID: peerID,
-      stream
-    });
-    this.refreshStreams();
     return true;
-    //  } catch (error) {
-    //    return false;
-    //  }
+
   }
 
   getStreamByID(id) {
@@ -1052,20 +2004,23 @@ e.target.play();
   }
 
   setCamMuted(isIt = true) {
-    //todo: stop stream
+
+    //Operational Logic - BEGIN
+    let camBtnOuter = this.getControl('camBtnOuter');
     this.mCamMuted = isIt;
     if (isIt) {
-      $(this.getBody).find('#camBtnOuter')[0].classList.remove('greenTxt');
-      $(this.getBody).find('#camBtnOuter')[0].classList.add('redTxt');
+      camBtnOuter.classList.remove('greenTxt', 'orangeTxt', 'redTxt');
+      camBtnOuter.classList.add('orangeTxt');
       this.mCamBtn.classList.remove('fa-webcam');
       this.mCamBtn.classList.add('fa-webcam-slash');
     } else {
-      $(this.getBody).find('#camBtnOuter')[0].classList.remove('redTxt');
-      $(this.getBody).find('#camBtnOuter')[0].classList.add('greenTxt');
+      camBtnOuter.classList.remove('greenTxt', 'orangeTxt', 'redTxt');
+      camBtnOuter.classList.add('orangeTxt');
       this.mCamBtn.classList.remove('fa-webcam-slash');
       this.mCamBtn.classList.add('fa-webcam');
     }
     return true;
+    //Operational Logic - END
   }
 
 
@@ -1081,41 +2036,47 @@ e.target.play();
   get getCamMuted() {
     return this.mCamMuted;
   }
+
   setMicMuted(isIt = true) {
-    //todo: stop stream
+
+    //Operational Logic - BEGIN
+    let micBtnOuter = this.getControl('micBtnOuter');
     this.mMicMuted = isIt;
+
     if (isIt) {
-      $(this.getBody).find('#micBtnOuter')[0].classList.add('redTxt');
-      $(this.getBody).find('#micBtnOuter')[0].classList.remove('greenTxt');
+      micBtnOuter.classList.remove('greenTxt', 'orangeTxt', 'redTxt');
+      micBtnOuter.classList.add('orangeTxt');
       this.mMicBtn.classList.remove('fa-microphone-alt');
       this.mMicBtn.classList.add('fa-microphone-alt-slash');
     } else {
-      $(this.getBody).find('#micBtnOuter')[0].classList.remove('redTxt');
-      $(this.getBody).find('#micBtnOuter')[0].classList.add('greenTxt');
+      micBtnOuter.classList.remove('greenTxt', 'orangeTxt', 'redTxt');
+      micBtnOuter.classList.add('orangeTxt');
       this.mMicBtn.classList.remove('fa-microphone-alt-slash');
       this.mMicBtn.classList.add('fa-microphone-alt');
     }
     return true;
+    //Operational Logic - END
   }
 
   setSSMuted(isIt = true) {
-    //todo: stop stream
+    //Operational Logic - BEGIN
+    let btnOuter = this.getControl('ssBtnOuter');
     this.mSSMuted = isIt;
     if (isIt) {
       let slash = $.parseHTML("<i id='slash' class='fas fa-slash fa-stack-1x'></i>");
-
-      $(this.getBody).find('#ssBtnOuter')[0].classList.add('redTxt');
-      $(this.getBody).find('#ssBtnOuter')[0].classList.remove('greenTxt');
-      $(this.getBody).find('#ssBtnOuter').append(slash);
+      btnOuter.classList.remove('greenTxt', 'orangeTxt', 'redTxt');
+      btnOuter.classList.add('orangeTxt');
+      $(btnOuter).append(slash);
     } else {
-      $(this.getBody).find('#ssBtnOuter')[0].classList.remove('redTxt');
-      $(this.getBody).find('#ssBtnOuter')[0].classList.add('greenTxt');
-      $(this.getBody).find('#ssBtnOuter').find('#slash').remove();
+      this.getControl('ssBtnOuter').classList.remove('greenTxt', 'orangeTxt', 'redTxt');
+      btnOuter.classList.add('orangeTxt');
+      $(btnOuter).find('#slash').remove();
     }
     return true;
+    //Operational Logic - END
   }
 
-  get getMicMuted() {
+  get getIsMicMuted() {
     return this.mMicMuted;
   }
 
@@ -1131,271 +2092,317 @@ e.target.play();
 
   }
 
+  //Toggling of Video / Audio / Screen Sharing Streams - BEGIN
+
+  //[Flow]: during normal operation, when video/audio outputs are to be muted, the idea is for the corresponding track(s) to be replaced
+  //with dynamically generated Dummy Tracks,- to let these flow for 1-2 seconds, after which, the Effeective Capabilities are to be modified
+  //and the corresponding WebRTC Senders disabled. We finally disable tracks (even dummy ones) to save on bandwidth and to prevent dummy tracks from spinning.
+  //Currently this holds for video tracks. That is to account for a variety of Chromium bugs and inconsistancies when it comes to video streams.
+  //
+  //[Renegotiation]: NO MORE(!): Should renegotiation be needed, the setInitialVideoTrack of a WebRTC Swarm is used to override the Dummy Track during (re)negotiation -
+  //so that it can occur based on the currently playing data-source (ex. screen sharing). Normally, however, during initial bootstrapping - the Dummy Stream
+  // - which encapsulated both dummy video and audio tracks is used for negotiation purposes. Then we Swap tracks as needed.
+  //Notice that continues modification of connections' paremeters MAY occur at any moment through the ongoing echange of ICE messages.
+  //[Security]: note the setAllowedCapabilities() set on a Swarm-level which indicate also the allowed ingress capabilities - ex.preventing others from establishing
+  //ingress video streams against the local user's will.
+
+  //Toggles the camera.
+  //notice: updateEffectiveVideo() is invoked internally to actually switch tracks based on user-choices.
+
+  async setIsSwitchingData(isIt) {
+    this.mSwitchingData = isIt;
+  }
+
+  get getIsSwitchingData() {
+    return this.mSwitchingData;
+  }
   toggleCam() {
-    let dummy = this.mSwarm.mSwarmManager.getDummyVideoStream;
-    this.setLocalStreamInUI(dummy);
-    this.mSwarm.replaceVideoTrack(dummy.getVideoTracks()[0]);
+
+    //Checks - BEGIN
+    if (!this.getCheckSAOk(2, 5000)) {
+      this.animateCSS("camBtnOuter", "shakeX") //cannot do so too often..
+      return;
+    }
+    //Checks - END
+
+    let wasVideoStreaming = (!this.mCamMuted || !this.mSSMuted);
+    let coolingDown = wasVideoStreaming;
+    let dummy = this.mSwarm.getLocalDummyStream; //to cover up for bugs in chromium, with muted video stream not producing black-screen video.
+    //also to cover for a yet another bug where the last frame would freeze on the other end when video-track is muted.
+
+    //Update the UI - BEGIN
     this.setCamMuted(!this.mCamMuted);
-    if (!this.mSSMuted)
-      this.setSSMuted();
-    this.updateEffectiveVideo().then(
-      this.updateEffectiveOutgressCapabilities());
+    this.setPeerCamStateInUI('Me', this.mCamMuted)
+    this.notifyCam(this.mCamMuted); //notify others
+    this.setLocalStreamInUI(dummy); //update view
+
+    //indicate required hardware to the Swarms API.
+    this.mSwarm.setCamInUse = !this.mCamMuted; //IMPORTANT! - based on this local hardware is to be requested and/or released.
+
+    //take care of screen-sharing - BEGIN
+    //either camera os screen sahring can be active at any given moment.
+    if (this.mCamMuted) {} else {
+      if (!this.mSSMuted)
+        this.setSSMuted(); //mute screen sharing if actibve
+    }
+    //take care of screen-sharing - END
+
+    //Update the UI - END
+
+
+    //IMPORTANT: we mute no matter what - updateEffectiveVideo() would be THEN called internally to choose the actual video stream.
+
+    //now, whatever we do - show a black-screen to other peers ASAP, at least for a while - so to make sure that data keeps flowing.
+    //IMPORTANT! let the black-screen play no matter what (i.e.mute video only) - under the hood this replaces
+    //LIVE Video Track with a dummy, dynamically generated black-screen video.
+    //IMPORTANT: unmute() accounts for security (honors whether Swarm is private or not.) - that is NOT the case for direct use of replaceAudio/Video-Track.
+    //Thus, unmute would not unmute LIVE track if peer is not authenticated, if authentication required.
+
+    //below, we let the Dummy Video track play for ~1000ms before modifying the effective outgress capabilities
+    //(so to compensate for the 'last-frame freezed' bug in Chromium).
+
+    //todo: make sure updateEffectiveOutgressCapabilities() is not called before camera is ready
+
+
+    /*
+
+    IMPORTANT:  see setPreSharedKey() of Swarm.js for an example on how to individually mute() LIVE audio/video streams, eventually disabling the
+    Dummy video/audio tracks themselves.
+    */
+    this.mSwarm.mute(false, true).then(gTools.sleeper(coolingDown ? 1000 : 100)).then(this.setIsSwitchingData(true)).then(async function() {
+      await this.mSwarm.mSwarmManager.prepareForCapabilities();
+    }.bind(this)).then( //we let Swarm Manager prepare hardware resouces (cam/microphone).
+      function() {
+        return this.updateEffectiveOutgressCapabilities() //either mute or umute tracks - according to options selected in the UI -
+        //make this happen through effective outgress capabiltiies (the Dummy Video is expected to be playing by now, instead of the actual video feed).
+        //Under the hood this calls 'updateEffectiveVideo()' -, in a synchronized manner,- thus a dedicated invocation is not needed;
+        //followed by an internal call to 'setEffectiveOutgressCapabilities()'. Then, at a Swarm level, after having made effective privilages Operational,
+        //the particular Swarm would call optimizeRequestedResources() on Swarm Manager to optimize (i.e. release) hardware resouces (such as the
+        //active camera or microphone).
+      }.bind(this)).then(this.setIsSwitchingData(false)).then(function() {
+      this.getControl('camBtnOuter').classList.remove('orangeTxt', 'redTxt');
+      this.getControl('camBtnOuter').classList.add(this.mCamMuted ? 'redTxt' : 'greenTxt');
+    }.bind(this)).catch(function(err) { //if anything goes wrong (e.g. browser did not provide a track or user-canceled).
+      this.getControl('camBtnOuter').classList.remove('orangeTxt', 'greenTxt');
+      this.getControl('camBtnOuter').classList.add('redTxt');
+      this.setPeerCamStateInUI('Me', false);
+      this.notifyCam(false);
+    }.bind(this));
   }
 
-
-  toggleSS() {
-    let dummy = this.mSwarm.mSwarmManager.getDummyVideoStream;
-    this.setLocalStreamInUI(dummy);
-    this.mSwarm.replaceVideoTrack(dummy.getVideoTracks()[0]);
-    if (!this.mCamMuted)
-      this.setCamMuted();
-    this.setSSMuted(!this.mSSMuted);
-    this.updateEffectiveOutgressCapabilities();
-  }
-
+  //Toggles the microphone.
   toggleMic() {
+    this.mCamMutedInLocalSystem = false;
+    //Checks - BEGIN
+    if (!this.getCheckSAOk(1, 2000)) {
+      this.animateCSS("micBtnOuter", "shakeX"); //cannot do so too often..
+      return;
+    }
+    //Checks - END
+
+    //Update the UI - BEGIN
     this.setMicMuted(!this.mMicMuted);
-    this.updateEffectiveOutgressCapabilities();
+    //Update the UI - END
+    this.setPeerMicStateInUI('Me', this.mMicMuted)
+    //indicate required hardware to the Swarms API.
+    this.mSwarm.setMicInUse = !this.mMicMuted; //IMPORTANT! - based on this local hardware is to be requested and/or released.
+    this.notifyMic(this.mMicMuted); //notify other peers than an operation is pending.
+    //Alternatively we could as well do the following:
+
+    //IMPORTANT: we mute no matter what - activateUIChoices() would be THEN called internally to choose the actual video/audio stream.
+
+    //Security - BEGIN
+    //IMPORTANT: unmute() accounts for Security. Would not unmute LIVE track if peer is not authenticated, if authentication required.
+    //Notice: updateEffectiveAudio() is being used under the hood to make user-UI-choices effective.
+    //  this.mSwarm.mute(true, false); avoid noise
+    //Security - END
+
+    this.mSwarm.mSwarmManager.prepareForCapabilities().then(gTools.sleeper(1000)).then(this.setIsSwitchingData(true)).then( //let it sleep for 1000 in case user just toggled video-stream a sec earlier.
+      //so to allow for Dummy-Track to keep playing.
+      function() {
+        return this.updateEffectiveOutgressCapabilities() //only then, either mute or unmute the outgress audio-track (through effective capabilities)- according to options selected in the UI.
+      }.bind(this)).then(this.setIsSwitchingData(false)).then(function() {
+      this.getControl('micBtnOuter').classList.remove('orangeTxt', 'redTxt');
+      this.getControl('micBtnOuter').classList.add(this.mCamMutedInLocalSystem ? 'orangeTxt' : (this.mMicMuted ? 'redTxt' : 'greenTxt'));
+
+    }.bind(this)).catch(function(err) { //should anything go wrong.. e.g. browser did not privide a hardware handle..
+      this.getControl('micBtnOuter').classList.remove('orangeTxt', 'greenTxt');
+      this.getControl('micBtnOuter').classList.add('redTxt');
+      this.setPeerMicStateInUI('Me', false);
+      this.notifyMic(true); //let the others know that the operation failed.
+    }.bind(this));
   }
 
-  async updateEffectiveVideo() {
-    if (!this.mSSMuted) {
-      let stream = this.mSwarm.mSwarmManager.startCapture().then(function(stream) {
-        if (stream == null)
-          return;
-        this.mSwarm.setInitialVideoTrack = stream.getVideoTracks()[0];
-        if (stream != null && stream.getVideoTracks().length > 0) {
-          let track = stream.getVideoTracks()[0];
-          this.setLocalStreamInUI(stream);
-          this.mSwarm.replaceVideoTrack(track)
-        }
-      }.bind(this))
-    } else {
-      let localStream = this.mSwarm.mSwarmManager.getLocalStream;
-      if (localStream != null && localStream.getVideoTracks().length > 0) {
-        let vt = localStream.getVideoTracks();
-        this.setLocalStreamInUI(localStream);
-        if (vt != null && vt.length > 0) {
-          this.mSwarm.replaceVideoTrack(vt[0]);
-        }
+  //Toggles Screen Sharing.
+  //notice: updateEffectiveVideo() is invoked internally to actually switch tracks based on user-choices.
+  toggleSS() {
 
+    //Checks - BEGIN
+    if (!this.getCheckSAOk(3, 5000)) {
+      this.animateCSS("ssBtnOuter", "shakeX"); //cannot do so too often..
+      return;
+    }
+    //Checks - END
+
+    let wasVideoStreaming = (!this.mCamMuted || !this.mSSMuted);
+    let coolingDown = wasVideoStreaming;
+    let dummy = this.mSwarm.getLocalDummyStream;
+
+    //Update the UI - BEGIN
+
+    this.setLocalStreamInUI(dummy); //responsiveness
+    this.setSSMuted(!this.mSSMuted); //update model
+    this.setPeerCamStateInUI('Me', this.mSSMuted)
+    this.notifyScreenSharing(this.mSSMuted); //notify other peers that an operation is pending (might be revoked).
+
+    if (!this.mCamMuted)
+      this.setCamMuted(); //mute the camera in UI.=> as others would be seeing the camera feed only.
+    //Update the UI - END
+
+    //indicate required hardware to the Swarms API.
+    this.mSwarm.setCamInUse = false; //IMPORTANT! - based on this local hardware is to be requested and/or released.
+
+    //Cooldown - BEGIN (optional - only if video stream has been active).
+    //now, whatever we do - show a black-screen to other peers ASAP, at least for a while - so to make sure that data keeps flowing.
+    //IMPORTANT! let the black-screen play no matter what (i.e.mute video only) - under the hood this replaces
+    //LIVE Video Track with a dummy, dynamically generated black-screen video.
+    //IMPORTANT: unmute() accounts for security (honors whether Swarm is private or not.) - that is NOT the case for direct use of replaceAudio/Video-Track.
+    //Thus, unmute would not unmute LIVE track if peer is not authenticated, if authentication required.
+
+    //Cooldown - END
+
+    this.mSwarm.mute(false, true).then(gTools.sleeper(coolingDown ? 1000 : 100)).then(this.setIsSwitchingData(true)).then(async function() {
+
+      return this.updateEffectiveOutgressCapabilities(); // switch to the actual screen track. Under the hood this calls 'updateEffectiveVideo()'
+      //followed by a call to 'setEffectiveOutgressCapabilities()'. Then, at a Swarm level, after effective privilages became Operational,
+      // the particialr Swarm would call optimizeRequestedResources() on Swarm Manager to optimize (i.e. release) hardware resouces (such as the
+      //active camera or microphone).
+    }.bind(this)).then(this.setIsSwitchingData(false)).then(async function() {
+      this.getControl('ssBtnOuter').classList.remove('orangeTxt', 'redTxt');
+      this.getControl('ssBtnOuter').classList.add(this.mSSMuted ? 'redTxt' : 'greenTxt');
+    }.bind(this)).catch(async function(err) { //e.g. browser did not agree on screen-data-access or user canceled.
+      this.setSSMuted(true);
+      let btnOuter = this.getControl('ssBtnOuter');
+      let slash = $.parseHTML("<i id='slash' class='fas fa-slash fa-stack-1x'></i>");
+      btnOuter.classList.remove('orangeTxt', 'greenTxt');
+      btnOuter.classList.add('redTxt');
+      $(btnOuter).append(slash);
+      this.setPeerCamStateInUI('Me', true); //update view
+      this.notifyScreenSharing(false); //notify the others
+    }.bind(this));
+  }
+
+  async activateUIChoices() {
+    try {
+      let res = await this.updateEffectiveVideo()
+      res = await this.updateEffectiveAudio();
+    } catch (ex) {
+      throw ex;
+    }
+  }
+  //Decide on video track(s) currently being streamed based on user-choice manifested through the Model/UI.
+  async updateEffectiveVideo() {
+    try {
+      if (!this.mSSMuted) {
+        //update with video-feed coming from the screen-capture apparatus. Prioritize it.
+        return this.mSwarm.mSwarmManager.startCapture().then(async function(stream) {
+          if (stream == null)
+            return;
+
+          // this.mSwarm.replaceVideoTrack(track) - avoid using this IF by design only one LIVE audio/video stream is to be used.
+          //in such a case use setLIVEVideoTrack, which enables for Swarm-Global mute() and unmute() functionalities, for a streamlined design.
+          //we use it to allow for renegotiation of the connection's quality
+          //with each recipient (should renegotiation ever occur). Screen sharing MIGHT require higher resolution than the default 640x480 video stream. Notice that
+          //that is the default resolution of the dummy video track (640x480)- which is to allow for efficient broadcasting.
+          if (stream != null && stream.getVideoTracks().length > 0) {
+            let track = stream.getVideoTracks()[0];
+            await this.mSwarm.setLIVEVideoTrack(track);
+            this.setLocalStreamInUI(stream);
+
+          }
+        }.bind(this));
+      } else if (!this.mCamMuted) {
+        //if no screen sharing is active then IF camera is activated -> switch to its stream.
+        let localStream = this.mSwarm.mSwarmManager.getLocalStream;
+        if (localStream != null && localStream.getVideoTracks().length > 0) {
+          let vt = localStream.getVideoTracks();
+          this.setLocalStreamInUI(localStream);
+          if (vt != null && vt.length > 0) {
+            await this.mSwarm.setLIVEVideoTrack(vt[0]);
+          }
+
+        }
+      } else {
+        //let the stub black-screen video flow (if swarm connection has video outgress capability enabled).
       }
+
+      //now replace the dummy black-screen video track with the actual LIVE video track -
+      //or the other way around base on user-choices.
+      //thus notice that a LIVE video track MIGHT be set BUT it might NOT be currently streaming (because it is muted).
+      //the swarm always maintains both the dummy, dynamically generated video/audio tracks and the current LIVE audio/video tracks (if available)
+      //and swithches between these.
+      if (this.mSSMuted && this.mCamMuted) {
+        await this.mSwarm.mute(false, true);
+      } else {
+        await this.mSwarm.unmute(false, true);
+      }
+    } catch (err) {
+      this.showMessageBox("Screen Unavailable 🥺", "web-browser did not provide any screen view..", eNotificationType.error);
+      this.mSwarm.mute(false, true);
     }
 
   }
-  updateEffectiveOutgressCapabilities() {
-    if (this.mSSMuted)
+  //Toggling of Video / Audio / Screen Sharing Streams - END
+
+  //Decide on audio track(s) currently being streamed based on user-choice manifested through the Model/UI.
+  async updateEffectiveAudio() {
+
+    //IMPORTANT: unmute() accounts for security (honors whether Swarm is private or not.) - that is NOT the case for direct use of replaceAudio/Video-Track.
+    //Thus, unmute would not unmute LIVE track if peer is not authenticated, if authentication required.
+    if (this.getIsMicMuted) {
+      await this.mSwarm.mute(true, false);
+    } else {
+      await this.mSwarm.unmute(true, false);
+    }
+  }
+  //the functions aims to set the tracks which are currently being streamed. It has nothing to do with what was negotiated between peers.
+  //it's all about muting and unmuting outgress data tracks.
+  //IMPORTANT: the stub video needs to keep playing for 1-2seconds before we mute/unmute tracks to cover for a variety of chromium bugs.
+  //ex. we keep playing dynamically generated black-screen video before the video-output track is DISABLED.
+
+  //IMPORTANT: we first call activateUIChoices(), which both picks the desired tracks, takes cares of security through unmute() on Swarm
+  //which account for whether peer was authenticated or not, and only then we set setEffectiveOutgressCapabilities() on Swarm.
+  //note that setEffectiveOutgressCapabilities() is a low-level call which overrides any security measures and MIGHT operate on both LIVE or Dummy tracks respecively.
+  //Thus from a security standpoint it is of paramount important to use the 1) setLIVEVideoTrack (on Swarm) and 2) (un)mute design pattern to account for internal Security.
+  async updateEffectiveOutgressCapabilities() {
+    if (this.mSSMuted) {
       this.mSwarm.mSwarmManager.stopCapture();
+    }
+    let targetCapabilities = eConnCapabilities.data;
 
     if (this.mSwarm != null) {
-
       if (!(this.mCamMuted && this.mSSMuted) && !this.mMicMuted) {
-        this.updateEffectiveVideo().then(
-          this.mSwarm.setEffectiveOutgressCapabilities(eConnCapabilities.audioVideo));
+        targetCapabilities = eConnCapabilities.audioVideo;
+
       } else if (!(this.mCamMuted && this.mSSMuted) && this.mMicMuted) {
-        this.updateEffectiveVideo().then(
-          this.mSwarm.setEffectiveOutgressCapabilities(eConnCapabilities.video));
-      } else if ((this.mCamMuted && this.mSSMuted) && !this.mMicMuted)
-        this.mSwarm.setEffectiveOutgressCapabilities(eConnCapabilities.audio);
-      else
-        this.mSwarm.setEffectiveOutgressCapabilities(eConnCapabilities.data);
+        targetCapabilities = eConnCapabilities.video;
+      } else if ((this.mCamMuted && this.mSSMuted) && !this.mMicMuted) {
+        targetCapabilities = eConnCapabilities.audio;
+      } else {
+        targetCapabilities = eConnCapabilities.data;
+      }
+      try {
+        let res = await this.activateUIChoices().then(async function() {
+          this.mSwarm.setEffectiveOutgressCapabilities(targetCapabilities);
+        }.bind(this));
+      } catch (ex) {
+        throw ex;
+      }
     }
     //app specific member functions - End
   }
 }
-const eChatMsgType = {
-  text: 0,
-  file: 1,
-  typing: 2,
-  avatar: 3
-}
-
-class CChatMsg {
-  constructor(type = eChatMsgType.text, from = new ArrayBuffer(), to = new ArrayBuffer(), data = new ArrayBuffer(), timestamp = 0, external = false) {
-    this.mTools = CTools.getInstance();
-    this.mFromID = this.mTools.convertToArrayBuffer(from);
-    this.mToID = this.mTools.convertToArrayBuffer(to);
-    this.mVersion = 1;
-    this.mData = data;
-    this.mTimestamp = timestamp;
-    this.mExternal = external; //NOT serialized. optimization only
-    this.mSig = null;
-    this.mInitialized = false;
-    this.mType = type;
-
-    if (this.mToID == null)
-      this.mToID = new ArrayBuffer();
-    if (this.mTimestamp == 0)
-      this.mTimestamp = this.mTools.getTime();
-  }
-
-  get getType() {
-    return this.mType;
-  }
-  get getSourceID() {
-    return this.mFromID;
-  }
-
-  get getDestinationID() {
-    return this.mToID;
-  }
-  get getTimestamp() {
-    return this.mTimestamp;
-  }
-  //Returns a HTML5 rendering of the encapsulated message
-  getRendering() {
-    if (this.mType != eChatMsgType.text)
-      return null; //for now
-
-    try {
-      let rendering = msgTemplate;
-      rendering = rendering.replace('[originFlagField]', this.mExternal ? 'you' : 'me');
-      //todo: check agent's status
-      rendering = rendering.replace('[statusField]', 'status green');
-
-      if (!this.mExternal)
-        rendering = rendering.replace('[sourceField]', 'me');
-      else {
-        rendering = rendering.replace('[sourceField]', this.mTools.arrayBufferToString(this.mFromID));
-      }
-
-      rendering = rendering.replace('[timeField]', this.mTools.timestampToString(this.mTimestamp));
-
-      rendering = rendering.replace('[msgTxtField]', this.mTools.arrayBufferToString(this.mData));
-
-      return rendering;
-    } catch (err) {
-      return null;
-    }
-  }
-
-  initialize() {
-    if (this.mSwarm == null || this.mInitialized)
-      return false;
-
-    this.mInitialized = true;
-    return true;
-  }
-
-  newDataChannelMessageEventHandler(eventData) {
-
-  }
-  get getVersion() {
-    return this.mVersion;
-  }
-  get getSig() {
-    return this.mSig;
-  }
-
-  sign(privKey) {
-    let concat = new CDataConcatenator();
-    concat.add(this.mFromID);
-    concat.add(this.mToID);
-    concat.add(this.mVersion);
-    concat.add(this.mData);
-    concat.add(this.mTimestamp);
-    concat.add(this.mType);
-
-    let sig = gCrypto.sign(privKey, concat.getData()); //Do NOT rely on BER encoding of data. that might differ slightly across implementations.this.getPackedData(false));
-    if (sig.byteLength == 64) {
-      this.mSig = sig;
-      return true;
-    } else
-      return false;
-  }
-
-  verifySignature(pubKey) {
-    let concat = new CDataConcatenator();
-    concat.add(this.mFromID);
-    concat.add(this.mToID);
-    concat.add(this.mVersion);
-    concat.add(this.mData);
-    concat.add(this.mTimestamp);
-    concat.add(this.mType);
-    if (gCrypto.verify(pubKey, concat.getData(), mSig))
-      return true;
-    else
-      return false;
-  }
-
-  getPackedData(includeSig = true) {
-
-    if (this.mSig == null)
-      this.mSig = new ArrayBuffer();
-    //we need to construct encoding iteratively due to optional fields
-    let wrapperSeq = new asn1js.Sequence();
-    wrapperSeq.valueBlock.value.push(new asn1js.Integer({
-      value: this.mVersion
-    }));
-
-    let mainDataSeq = new asn1js.Sequence();
-    mainDataSeq.valueBlock.value.push(new asn1js.Integer({
-      value: this.mType
-    }));
-
-    mainDataSeq.valueBlock.value.push(new asn1js.OctetString({
-      valueHex: this.mFromID
-    }));
-    mainDataSeq.valueBlock.value.push(new asn1js.OctetString({
-      valueHex: this.mToID
-    }));
-
-    mainDataSeq.valueBlock.value.push(new asn1js.OctetString({
-      valueHex: this.mTools.convertToArrayBuffer(this.mData)
-    }));
-
-    mainDataSeq.valueBlock.value.push(new asn1js.Integer({
-      value: this.mTimestamp
-    }));
-
-    if (includeSig) {
-      mainDataSeq.valueBlock.value.push(new asn1js.OctetString({
-        valueHex: this.mSig
-      }));
-    }
-
-    wrapperSeq.valueBlock.value.push(mainDataSeq);
-
-    var bytes = wrapperSeq.toBER(false);
-    var length = bytes.byteLength;
-    return bytes;
-  }
-
-  static instantiate(packedData) {
-    try {
-      if (packedData.byteLength == 0)
-        return 0;
-      //local variables - BEGIN
-      let toRet = new CChatMsg();
-      let decoded_sequence1, decoded_sequence2, decoded_asn1;
-      //local variables - END
-
-      decoded_asn1 = asn1js.fromBER(packedData);
-
-      if (decoded_asn1.offset === (-1))
-        return 0; // Error during decoding
-
-      decoded_sequence1 = decoded_asn1.result;
-      toRet.mVersion = decoded_sequence1.valueBlock.value[0].valueBlock.valueDec;
-
-      if (toRet.mVersion == 1) {
-        decoded_sequence2 = decoded_sequence1.valueBlock.value[1];
-        toRet.mType = decoded_sequence2.valueBlock.value[0].valueBlock.valueDec;
-        toRet.mFromID = decoded_sequence2.valueBlock.value[1].valueBlock.valueHex;
-        toRet.mToID = decoded_sequence2.valueBlock.value[2].valueBlock.valueHex;
-        toRet.mData = decoded_sequence2.valueBlock.value[3].valueBlock.valueHex;
-        toRet.mTimestamp = decoded_sequence2.valueBlock.value[4].valueBlock.valueDec;
-
-        //decode the optional Variables
-        if (decoded_sequence2.valueBlock.value.length > 5)
-          toRet.mSig = decoded_sequence2.valueBlock.value[5].valueBlock.valueHex;
-      }
 
 
-      return toRet;
-    } catch (error) {
-      return false;
-    }
-  }
-}
+
 export default CMeeting;
