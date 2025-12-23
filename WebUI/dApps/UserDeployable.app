@@ -70,7 +70,7 @@ class CUIAppTemplate extends CWindow {
     CVMContext.getInstance().addNewDFSMsgListener(this.newDFSMsgCallback.bind(this), this.mID);
     CVMContext.getInstance().addNewGridScriptResultListener(this.newGridScriptResultCallback.bind(this), this.mID);
     this.loadLocalData();
-    this.controllerThreadInterval = 1000;
+    this.mControllerThreadInterval = 1000;
     this.mControlerExecuting = false;
     this.mControler = 0;
 
@@ -222,7 +222,7 @@ class CUIAppTemplate extends CWindow {
   //internal processing queue
   {
     this.loadSettings();
-    this.mControler = setInterval(this.mControlerThreadF.bind(this), this.controllerThreadInterval);
+    this.mControler = setInterval(this.mControlerThreadF.bind(this), this.mControllerThreadInterval);
 
 
     //Settings Support - BEGIN
