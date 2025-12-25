@@ -5,6 +5,7 @@
 
 ###
 <h3 align="center"><b><span style="color:cyan">⋮⋮⋮</span> GRIDNET OS</b></h3>
+<p align="center"><b>Version 1.9.1</b></p>
 <p align="center">What you are about to Discover is the very first 100% decentralized Operating System.</p>
 
 ###
